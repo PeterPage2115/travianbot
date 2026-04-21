@@ -2,12 +2,8 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies for Prisma and node-gyp
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    openssl \
+    python3 make g++ openssl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
@@ -24,10 +20,8 @@ FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Install tini for proper signal handling
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini \
-    openssl \
+    tini openssl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
