@@ -1,0 +1,109 @@
+import { describe, it, expect } from 'vitest';
+import {
+  createVillageListEmbed,
+  createVillageWithDistanceEmbed,
+  createInactiveReportEmbed,
+  createDiplomacyListEmbed,
+  createServerInfoEmbed,
+} from '../../src/discord/embeds/formatters.js';
+
+describe('Embed Formatters', () => {
+  describe('createVillageListEmbed', () => {
+    it('should create embed with villages', () => {
+      const villages = [
+        { villageId: 1, name: 'Village1', x: 10, y: 20, population: 100, playerName: 'Player1', allianceTag: 'ALL' },
+      ];
+      const embed = createVillageListEmbed('Test Title', villages, 1, false);
+      const data = embed.toJSON();
+      expect(data.title).toBe('Test Title');
+      expect(data.fields).toHaveLength(1);
+      expect(data.fields?.[0].name).toBe('Village1 (10|20)');
+    });
+
+    it('should show empty message when no villages', () => {
+      const embed = createVillageListEmbed('Empty', [], 0, false);
+      const data = embed.toJSON();
+      expect(data.description).toBe('No villages found.');
+    });
+
+    it('should show hasMore footer when true', () => {
+      const embed = createVillageListEmbed('Test', [], 50, true);
+      const data = embed.toJSON();
+      expect(data.footer?.text).toContain('more available');
+    });
+  });
+
+  describe('createVillageWithDistanceEmbed', () => {
+    it('should create embed with distances', () => {
+      const villages = [
+        { villageId: 1, name: 'Village1', x: 10, y: 20, population: 100, playerName: 'Player1', allianceTag: 'ALL', distance: 15.5 },
+      ];
+      const embed = createVillageWithDistanceEmbed('Near', villages, 1, false);
+      const data = embed.toJSON();
+      expect(data.fields?.[0].name).toContain('15.5 fields');
+    });
+
+    it('should show empty message when no villages', () => {
+      const embed = createVillageWithDistanceEmbed('Empty', [], 0, false);
+      const data = embed.toJSON();
+      expect(data.description).toContain('No villages found');
+    });
+  });
+
+  describe('createInactiveReportEmbed', () => {
+    it('should create embed with inactive candidates', () => {
+      const candidates = [
+        {
+          villageId: 1, name: 'Village1', x: 10, y: 20, population: 50, playerName: 'Player1', allianceTag: null,
+          inactivityScore: 80, label: 'likely inactive',
+          explanation: { score: 80, isCandidate: true, reasons: ['No change in population'] },
+        },
+      ];
+      const embed = createInactiveReportEmbed('Inactive', candidates, 1, false);
+      const data = embed.toJSON();
+      expect(data.fields?.[0].name).toContain('Score: 80');
+      expect(data.fields?.[0].value).toContain('No change in population');
+    });
+
+    it('should show empty message when no candidates', () => {
+      const embed = createInactiveReportEmbed('Inactive', [], 0, false);
+      const data = embed.toJSON();
+      expect(data.description).toBe('No inactive candidates found.');
+    });
+  });
+
+  describe('createDiplomacyListEmbed', () => {
+    it('should create embed with diplomacy statuses', () => {
+      const statuses = [
+        { allianceTag: 'ENEMY', status: 'enemy' },
+        { allianceTag: 'FRIEND', status: 'ally' },
+      ];
+      const embed = createDiplomacyListEmbed('Diplomacy', statuses);
+      const data = embed.toJSON();
+      expect(data.fields).toHaveLength(2);
+      expect(data.fields?.[0].name).toBe('ENEMY');
+      expect(data.fields?.[0].value).toBe('Status: enemy');
+    });
+
+    it('should show empty message when no statuses', () => {
+      const embed = createDiplomacyListEmbed('Diplomacy', []);
+      const data = embed.toJSON();
+      expect(data.description).toBe('No diplomacy settings configured.');
+    });
+  });
+
+  describe('createServerInfoEmbed', () => {
+    it('should create embed with server info', () => {
+      const info = {
+        'Server ID': '1',
+        'Latest Snapshot': '2026-04-20T00:00:00.000Z',
+        'Total Villages': '1000',
+      };
+      const embed = createServerInfoEmbed('Server Info', info);
+      const data = embed.toJSON();
+      expect(data.fields).toHaveLength(3);
+      expect(data.fields?.[0].name).toBe('Server ID');
+      expect(data.fields?.[0].value).toBe('1');
+    });
+  });
+});

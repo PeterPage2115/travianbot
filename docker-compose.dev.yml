@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - travianbot-dev-network
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: travianbot_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dev -d travianbot_dev']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - travianbot-dev-network
+
+volumes:
+  postgres-dev-data:
+
+networks:
+  travianbot-dev-network:
+    driver: bridge

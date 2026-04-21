@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Server {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  mapSqlUrl   String    @map("map_sql_url")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  snapshots   Snapshot[]
+  alliances   Alliance[]
+  players     Player[]
+  villages    Village[]
+  
+  @@map("servers")
+}
+
+model Snapshot {
+  id                Int       @id @default(autoincrement())
+  serverId          Int       @map("server_id")
+  snapshotAt        DateTime  @map("snapshot_at")
+  totalVillages     Int       @map("total_villages")
+  totalPlayers      Int       @map("total_players")
+  totalAlliances    Int       @map("total_alliances")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  
+  server            Server    @relation(fields: [serverId], references: [id])
+  villageSnapshots  VillageSnapshot[]
+  
+  @@unique([serverId, snapshotAt])
+  @@map("snapshots")
+}
+
+model Alliance {
+  id          Int       @id @default(autoincrement())
+  serverId    Int       @map("server_id")
+  allianceId  Int       @map("alliance_id")
+  tag         String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  server      Server    @relation(fields: [serverId], references: [id])
+  players     Player[]
+  villages    Village[]
+  
+  @@unique([serverId, allianceId])
+  @@map("alliances")
+}
+
+model Player {
+  id          Int       @id @default(autoincrement())
+  serverId    Int       @map("server_id")
+  playerId    Int       @map("player_id")
+  name        String
+  allianceId  Int?      @map("alliance_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  server      Server    @relation(fields: [serverId], references: [id])
+  alliance    Alliance? @relation(fields: [allianceId], references: [id])
+  villages    Village[]
+  
+  @@unique([serverId, playerId])
+  @@map("players")
+}
+
+model Village {
+  id          Int       @id @default(autoincrement())
+  serverId    Int       @map("server_id")
+  villageId   Int       @map("village_id")
+  name        String
+  x           Int
+  y           Int
+  playerId    Int?      @map("player_id")
+  allianceId  Int?      @map("alliance_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  server      Server           @relation(fields: [serverId], references: [id])
+  player      Player?          @relation(fields: [playerId], references: [id])
+  alliance    Alliance?        @relation(fields: [allianceId], references: [id])
+  snapshots   VillageSnapshot[]
+  
+  @@unique([serverId, villageId])
+  @@map("villages")
+}
+
+model VillageSnapshot {
+  id              Int       @id @default(autoincrement())
+  snapshotId      Int       @map("snapshot_id")
+  villageId       Int       @map("village_id")
+  population      Int
+  tribeId         Int       @map("tribe_id")
+  region          String
+  isCapital       Boolean   @map("is_capital")
+  isCity          Boolean   @map("is_city")
+  hasHarbor       Boolean   @map("has_harbor")
+  victoryPoints   Int       @map("victory_points")
+  
+  snapshot        Snapshot  @relation(fields: [snapshotId], references: [id])
+  village         Village   @relation(fields: [villageId], references: [id])
+
+  @@unique([snapshotId, villageId])
+  @@map("village_snapshots")
+}
+
+model GuildDiplomacySetting {
+  id          Int      @id @default(autoincrement())
+  guildId     String   @map("guild_id")
+  allianceTag String   @map("alliance_tag")
+  status      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([guildId, allianceTag])
+  @@index([guildId, status])
+  @@map("guild_diplomacy_settings")
+}
+
+model GuildSetting {
+  guildId         String   @id @map("guild_id")
+  defaultLanguage String   @map("default_language")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("guild_settings")
+}
+
+model UserSetting {
+  userId           String   @id @map("user_id")
+  languageOverride String   @map("language_override")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("user_settings")
+}

@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+.env.local
+.env.production
+.env.*.example
+.git
+.github
+*.md
+.copilot*
+coverage
+.vscode
+.idea
+tests
+tsconfig.typecheck.json
