@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package.json package-lock.json ./
 RUN npm ci
 
-COPY tsconfig.json tsconfig.typecheck.json ./
+COPY tsconfig.json ./
 COPY prisma ./prisma
 COPY src ./src
 
