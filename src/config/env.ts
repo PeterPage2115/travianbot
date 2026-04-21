@@ -44,9 +44,14 @@ export function sanitizeDatabaseUrl(url: string): string {
 }
 
 export function loadEnv(mode?: 'local' | 'production'): EnvConfig {
-  const envFile = process.env.ENV_FILE || (mode ? `.env.${mode}` : '.env');
+  const nodeEnv = process.env.NODE_ENV;
   
-  config({ path: resolve(process.cwd(), envFile) });
+  // In production Docker containers, environment variables are injected directly.
+  // Skip dotenv file loading to avoid issues when .env file is missing.
+  if (nodeEnv !== 'production') {
+    const envFile = process.env.ENV_FILE || (mode ? `.env.${mode}` : '.env');
+    config({ path: resolve(process.cwd(), envFile) });
+  }
   
   return validateEnv();
 }

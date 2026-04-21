@@ -7,6 +7,10 @@ services:
     restart: unless-stopped
     env_file:
       - .env.production
+    environment:
+      # Ensure Prisma can always connect even if env_file is missing
+      DATABASE_URL: ${DATABASE_URL:-postgresql://travianbot:changeme@db:5432/travianbot_prod}
+      NODE_ENV: production
     depends_on:
       db:
         condition: service_healthy
