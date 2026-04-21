@@ -8,8 +8,8 @@ services:
     env_file:
       - .env.production
     environment:
-      # Ensure Prisma can always connect even if env_file is missing
-      DATABASE_URL: ${DATABASE_URL:-postgresql://travianbot:changeme@db:5432/travianbot_prod}
+      # Hardcoded database URL - always use the db service
+      DATABASE_URL: postgresql://travianbot:changeme@db:5432/travianbot_prod
       NODE_ENV: production
     depends_on:
       db:
@@ -21,13 +21,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-travianbot}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
-      POSTGRES_DB: ${DB_NAME:-travianbot_prod}
+      POSTGRES_USER: travianbot
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: travianbot_prod
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-travianbot} -d ${DB_NAME:-travianbot_prod}']
+      test: ['CMD-SHELL', 'pg_isready -U travianbot -d travianbot_prod']
       interval: 10s
       timeout: 5s
       retries: 5
