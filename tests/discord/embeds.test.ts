@@ -58,13 +58,30 @@ describe('Embed Formatters', () => {
         {
           villageId: 1, name: 'Village1', x: 10, y: 20, population: 50, playerName: 'Player1', allianceTag: null,
           inactivityScore: 80, label: 'likely inactive',
-          explanation: { score: 80, isCandidate: true, reasons: ['No change in population'] },
+          explanation: {
+            classification: 'likely_inactive',
+            isCandidate: true,
+            score: 80,
+            snapshotCount: 3,
+            deltas: [0, 0, 0],
+            unchangedSteps: 3,
+            smallDeltaSteps: 3,
+            stableStepRatio: 1,
+            minPopulation: 50,
+            maxPopulation: 50,
+            populationRange: 0,
+            startPopulation: 50,
+            endPopulation: 50,
+            totalDelta: 0,
+            maxStepDeltaObserved: 0,
+            history: [],
+          },
         },
       ];
       const embed = createInactiveReportEmbed(LANG, 'Inactive', candidates, 1, false);
       const data = embed.toJSON();
       expect(data.fields?.[0].name).toContain('Score: 80');
-      expect(data.fields?.[0].value).toContain('No change in population');
+      expect(data.fields?.[0].value).toContain('unchanged snapshots');
     });
 
     it('should show empty message when no candidates', () => {
