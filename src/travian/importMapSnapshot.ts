@@ -21,7 +21,8 @@ export interface ImportResult {
 export async function importMapSnapshot(
   prisma: PrismaClient,
   serverId: number,
-  mapSqlUrl: string
+  mapSqlUrl: string,
+  serverName?: string
 ): Promise<ImportResult> {
   // Download and parse
   const content = await downloadMapSql(mapSqlUrl);
@@ -33,6 +34,17 @@ export async function importMapSnapshot(
   
   // Use a transaction for consistency
   return await prisma.$transaction(async (tx) => {
+    // Ensure the server record exists
+    await tx.server.upsert({
+      where: { id: serverId },
+      update: { mapSqlUrl },
+      create: {
+        id: serverId,
+        name: serverName ?? `Server ${serverId}`,
+        mapSqlUrl,
+      },
+    });
+
     const snapshotAt = new Date();
     
     // Track unique alliances, players, villages

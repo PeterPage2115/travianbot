@@ -14,12 +14,13 @@ async function executeImportWithRetry(
   prisma: PrismaClient,
   serverId: number,
   mapSqlUrl: string,
+  serverName: string | undefined,
   maxRetries: number = MAX_RETRIES
 ): Promise<void> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       logger.info({ attempt, maxRetries }, 'Starting map import');
-      const result = await importMapSnapshot(prisma, serverId, mapSqlUrl);
+      const result = await importMapSnapshot(prisma, serverId, mapSqlUrl, serverName);
       logger.info({
         snapshotId: result.snapshotId,
         totalVillages: result.totalVillages,
@@ -59,6 +60,7 @@ export function startImportScheduler(
   prisma: PrismaClient,
   serverId: number,
   mapSqlUrl: string,
+  serverName: string | undefined,
   cronExpression: string = '0 0 * * *'
 ) {
   logger.info({ cronExpression }, 'Starting import scheduler');
@@ -73,7 +75,7 @@ export function startImportScheduler(
         return;
       }
 
-      await executeImportWithRetry(prisma, serverId, mapSqlUrl);
+      await executeImportWithRetry(prisma, serverId, mapSqlUrl, serverName);
     } catch (error) {
       logger.error({ error }, 'Scheduled import failed after all retries');
     }

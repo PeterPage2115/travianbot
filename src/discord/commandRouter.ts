@@ -344,7 +344,7 @@ async function handleMapRefresh(
 
   await interaction.deferReply();
 
-  const result = await importMapSnapshot(prisma, config.SERVER_ID, config.MAP_SQL_URL);
+  const result = await importMapSnapshot(prisma, config.SERVER_ID, config.MAP_SQL_URL, config.SERVER_NAME);
 
   const embed = createServerInfoEmbed('Map Refresh Complete', {
     'Snapshot ID': result.snapshotId.toString(),

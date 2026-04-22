@@ -12,6 +12,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   ADMIN_ROLE_ID: z.string().optional(),
   SERVER_ID: z.coerce.number().default(1),
+  SERVER_NAME: z.string().optional(),
   INACTIVITY_LOOKBACK_SNAPSHOTS: z.coerce.number().int().positive().default(5),
   INACTIVITY_ZERO_GROWTH_THRESHOLD: z.coerce.number().int().nonnegative().default(0),
   INACTIVITY_SMALL_GROWTH_THRESHOLD: z.coerce.number().int().nonnegative().default(50),

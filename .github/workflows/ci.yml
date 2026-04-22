@@ -40,6 +40,11 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Sync database schema
+        run: npx prisma db push --accept-data-loss
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/travianbot_test
+
       - name: Type check
         run: npm run typecheck
 

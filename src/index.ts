@@ -32,7 +32,7 @@ async function main() {
 
     await registerSlashCommands(config.DISCORD_CLIENT_ID, config.DISCORD_TOKEN);
 
-    startImportScheduler(prisma, config.SERVER_ID, config.MAP_SQL_URL);
+    startImportScheduler(prisma, config.SERVER_ID, config.MAP_SQL_URL, config.SERVER_NAME);
 
     logger.info('Bootstrap complete - ready to receive commands');
   });
