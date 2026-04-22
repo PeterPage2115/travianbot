@@ -57,6 +57,7 @@ jobs:
           echo "TRAVIAN_SERVER_URL=https://example.com" >> .env
           echo "MAP_SQL_URL=https://example.com/map.sql" >> .env
           echo "NODE_ENV=test" >> .env
+          echo "ENV_FILE=.env.nonexistent" >> .env
 
       - name: Run tests
         run: npm run ci:test

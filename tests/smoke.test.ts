@@ -131,6 +131,7 @@ describe('Environment Configuration', () => {
       delete process.env.DATABASE_URL;
       delete process.env.TRAVIAN_SERVER_URL;
       delete process.env.MAP_SQL_URL;
+      process.env.ENV_FILE = '.env.nonexistent';
       
       expect(() => loadEnv()).toThrow('Invalid environment variables');
     });

@@ -10,6 +10,7 @@ import { listAllianceVillages } from '../travian/queries/listAllianceVillages.js
 import { listPlayerVillages } from '../travian/queries/listPlayerVillages.js';
 import { setAllianceDiplomacyStatus, removeAllianceDiplomacyStatus, listDiplomacyStates } from '../travian/diplomacy/diplomacyRepository.js';
 import { setGuildDefaultLanguage } from '../settings/guildSettingsRepository.js';
+import { setUserLanguageOverride } from '../settings/userSettingsRepository.js';
 import { importMapSnapshot } from '../travian/importMapSnapshot.js';
 import { findVillagesByTribe } from '../travian/queries/findVillagesByTribe.js';
 import { getAllianceStats } from '../travian/queries/getAllianceStats.js';
@@ -324,15 +325,19 @@ async function handleSettingsLanguage(
     return;
   }
 
-  if (!await requireAdmin(config, interaction)) return;
-
-  await interaction.deferReply();
-
   const language = interaction.options.getString('language', true) as 'en' | 'pl';
+  const scope = interaction.options.getString('scope') ?? 'user';
 
-  await setGuildDefaultLanguage(prisma, interaction.guildId, language);
-
-  await interaction.editReply({ content: `Language set to ${language}.` });
+  if (scope === 'server') {
+    if (!await requireAdmin(config, interaction)) return;
+    await interaction.deferReply();
+    await setGuildDefaultLanguage(prisma, interaction.guildId, language);
+    await interaction.editReply({ content: `Server language set to ${language}.` });
+  } else {
+    await interaction.deferReply();
+    await setUserLanguageOverride(prisma, interaction.user.id, language);
+    await interaction.editReply({ content: `Your language preference set to ${language}.` });
+  }
 }
 
 async function handleMapRefresh(
