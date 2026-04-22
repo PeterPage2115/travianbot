@@ -11,6 +11,7 @@ coverage/
 prisma/.env
 *.swp
 *.swo
+data/
 
 # OS
 .DS_Store

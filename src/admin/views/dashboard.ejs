@@ -1,0 +1,158 @@
+<% layout('layout', { path: '/' }) %>
+
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <span class="last-update">Last updated: <%= new Date().toLocaleString() %></span>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon">📊</div>
+    <div class="stat-info">
+      <span class="stat-value"><%= stats.totalCommands %></span>
+      <span class="stat-label">Total Commands</span>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📅</div>
+    <div class="stat-info">
+      <span class="stat-value"><%= stats.commandsToday %></span>
+      <span class="stat-label">Today</span>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📆</div>
+    <div class="stat-info">
+      <span class="stat-value"><%= stats.commandsThisWeek %></span>
+      <span class="stat-label">This Week</span>
+    </div>
+  </div>
+  <div class="stat-card error">
+    <div class="stat-icon">🐛</div>
+    <div class="stat-info">
+      <span class="stat-value"><%= stats.totalErrors %></span>
+      <span class="stat-label">Total Errors</span>
+    </div>
+  </div>
+  <div class="stat-card error">
+    <div class="stat-icon">⚠️</div>
+    <div class="stat-info">
+      <span class="stat-value"><%= stats.errorsToday %></span>
+      <span class="stat-label">Errors Today</span>
+    </div>
+  </div>
+</div>
+
+<div class="charts-grid">
+  <div class="chart-card">
+    <h3>Commands (Last 7 Days)</h3>
+    <canvas id="commandsChart"></canvas>
+  </div>
+</div>
+
+<div class="tables-grid">
+  <div class="table-card">
+    <h3>Top Commands</h3>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>Count</th></tr>
+      </thead>
+      <tbody>
+        <% stats.topCommands.forEach(cmd => { %>
+          <tr><td><code>/<%= cmd.commandName %></code></td><td><%= cmd.count %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card">
+    <h3>Top Users</h3>
+    <table>
+      <thead>
+        <tr><th>User</th><th>Count</th></tr>
+      </thead>
+      <tbody>
+        <% stats.topUsers.forEach(user => { %>
+          <tr><td><%= user.userName || 'Unknown' %></td><td><%= user.count %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="table-card full-width">
+  <h3>Recent Commands</h3>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>User</th><th>Guild</th><th>Command</th><th>Status</th><th>Duration</th></tr>
+    </thead>
+    <tbody>
+      <% stats.recentCommands.forEach(cmd => { %>
+        <tr>
+          <td><%= new Date(cmd.timestamp).toLocaleString() %></td>
+          <td><%= cmd.userName %></td>
+          <td><%= cmd.guildName || '-' %></td>
+          <td><code>/<%= cmd.commandName %></code></td>
+          <td><span class="badge <%= cmd.success ? 'success' : 'error' %>"><%= cmd.success ? '✓ OK' : '✗ Error' %></span></td>
+          <td><%= cmd.durationMs %>ms</td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<% if (stats.recentErrors.length > 0) { %>
+<div class="table-card full-width">
+  <h3>Recent Errors</h3>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Command</th><th>User</th><th>Error</th></tr>
+    </thead>
+    <tbody>
+      <% stats.recentErrors.forEach(err => { %>
+        <tr>
+          <td><%= new Date(err.timestamp).toLocaleString() %></td>
+          <td><code>/<%= err.commandName || '-' %></code></td>
+          <td><%= err.userName %></td>
+          <td class="error-text"><%= err.errorMessage %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+
+<script>
+  const chartData = <%- JSON.stringify(chartData) %>;
+  const ctx = document.getElementById('commandsChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartData.map(d => d.date).reverse(),
+      datasets: [
+        {
+          label: 'Commands',
+          data: chartData.map(d => d.count).reverse(),
+          backgroundColor: 'rgba(88, 101, 242, 0.8)',
+          borderRadius: 4,
+        },
+        {
+          label: 'Errors',
+          data: chartData.map(d => d.errors).reverse(),
+          backgroundColor: 'rgba(237, 66, 69, 0.8)',
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#b9bbbe' } }
+      },
+      scales: {
+        x: { ticks: { color: '#b9bbbe' }, grid: { color: '#2f3136' } },
+        y: { ticks: { color: '#b9bbbe' }, grid: { color: '#2f3136' }, beginAtZero: true }
+      }
+    }
+  });
+</script>

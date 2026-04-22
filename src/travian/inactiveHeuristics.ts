@@ -37,12 +37,12 @@ export interface InactiveScoreExplanation {
 
 export const DEFAULT_INACTIVE_HEURISTICS_CONFIG: Readonly<InactiveHeuristicsConfig> = Object.freeze({
   lookbackSnapshots: 7,
-  minHistorySnapshots: 4,
-  maxStepDelta: 2,
-  maxPopulationRange: 4,
-  maxTotalDelta: 4,
-  minStableStepRatio: 0.75,
-  minScore: 60
+  minHistorySnapshots: 2,
+  maxStepDelta: 10,
+  maxPopulationRange: 50,
+  maxTotalDelta: 50,
+  minStableStepRatio: 0.5,
+  minScore: 30
 });
 
 export function resolveInactiveHeuristicsConfig(

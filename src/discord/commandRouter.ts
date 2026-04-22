@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, Interaction } from 'discord.js';
 import { PrismaClient } from '@prisma/client';
 import { EnvConfig } from '../config/env.js';
 import { logger } from '../logger.js';
-import { requireAdmin, handleCommandError } from './commands/handler.js';
+import { requireAdmin } from './commands/handler.js';
 import { resolveStoredLanguagePreference } from '../settings/languagePreferences.js';
 import { translate, SupportedLanguage } from '../i18n/index.js';
 import { findAllianceVillagesNear } from '../travian/queries/findAllianceVillagesNear.js';
@@ -15,7 +15,6 @@ import { setGuildDefaultLanguage } from '../settings/guildSettingsRepository.js'
 import { setUserLanguageOverride } from '../settings/userSettingsRepository.js';
 import { importMapSnapshot } from '../travian/importMapSnapshot.js';
 import { findVillagesByTribe } from '../travian/queries/findVillagesByTribe.js';
-import { getAllianceStats } from '../travian/queries/getAllianceStats.js';
 import { getPlayerInfo } from '../travian/queries/getPlayerInfo.js';
 import { getWotwInfo } from '../travian/queries/getWotwInfo.js';
 import { calculateDistance } from '../shared/distance.js';
@@ -34,7 +33,6 @@ import {
   createDiplomacyListEmbed,
   createServerInfoEmbed,
   createHelpEmbed,
-  createAllianceStatsEmbed,
   createPlayerInfoEmbed,
   createDistanceEmbed,
   createWotwInfoEmbed,
@@ -57,8 +55,7 @@ export async function handleInteraction(
   const commandName = interaction.commandName;
   const lang = await getLang(interaction, prisma);
 
-  try {
-    switch (commandName) {
+  switch (commandName) {
       case 'alliance-near':
         await handleAllianceNear(interaction, prisma, config, lang);
         break;
@@ -95,9 +92,6 @@ export async function handleInteraction(
       case 'tribe-search':
         await handleTribeSearch(interaction, prisma, config, lang);
         break;
-      case 'alliance-stats':
-        await handleAllianceStats(interaction, prisma, config, lang);
-        break;
       case 'player-info':
         await handlePlayerInfo(interaction, prisma, config, lang);
         break;
@@ -117,9 +111,6 @@ export async function handleInteraction(
         logger.warn({ commandName }, 'Unknown command received');
         await interaction.reply({ content: translate(lang, 'common.unknown_command'), ephemeral: true });
     }
-  } catch (error) {
-    await handleCommandError(interaction, error);
-  }
 }
 
 async function handleAllianceNear(
@@ -409,7 +400,6 @@ async function handleHelp(
     { name: 'alliance-villages', description: translate(lang, 'help.alliance-villages') },
     { name: 'player-villages', description: translate(lang, 'help.player-villages') },
     { name: 'tribe-search', description: translate(lang, 'help.tribe-search') },
-    { name: 'alliance-stats', description: translate(lang, 'help.alliance-stats') },
     { name: 'player-info', description: translate(lang, 'help.player-info') },
     { name: 'distance', description: translate(lang, 'help.distance') },
     { name: 'wotw-info', description: translate(lang, 'help.wotw-info') },
@@ -461,27 +451,6 @@ async function handleTribeSearch(
     : translate(lang, 'tribe_search.title_all', { tribe: tribeName });
 
   const embed = createVillageWithDistanceEmbed(lang, title, result.villages, result.totalMatched, result.hasMore);
-
-  await interaction.editReply({ embeds: [embed] });
-}
-
-async function handleAllianceStats(
-  interaction: ChatInputCommandInteraction,
-  prisma: PrismaClient,
-  config: EnvConfig,
-  lang: SupportedLanguage
-): Promise<void> {
-  await interaction.deferReply();
-
-  const tag = interaction.options.getString('tag', true);
-  const stats = await getAllianceStats(prisma, config.SERVER_ID, tag);
-
-  if (!stats) {
-    await interaction.editReply({ content: translate(lang, 'alliance_stats.not_found', { tag }) });
-    return;
-  }
-
-  const embed = createAllianceStatsEmbed(lang, translate(lang, 'alliance_stats.title', { tag }), stats);
 
   await interaction.editReply({ embeds: [embed] });
 }

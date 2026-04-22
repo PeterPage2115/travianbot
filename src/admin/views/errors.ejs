@@ -1,0 +1,33 @@
+<% layout('layout', { path: '/errors' }) %>
+
+<div class="page-header">
+  <h1>Error Logs</h1>
+  <span class="last-update"><%= logs.length %> entries</span>
+</div>
+
+<div class="table-card full-width">
+  <table class="log-table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Command</th>
+        <th>User</th>
+        <th>Guild</th>
+        <th>Error</th>
+        <th>Stack</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% logs.forEach(err => { %>
+        <tr>
+          <td><%= new Date(err.timestamp).toLocaleString() %></td>
+          <td><code>/<%= err.commandName || '-' %></code></td>
+          <td><%= err.userName %></td>
+          <td><%= err.guildId || '-' %></td>
+          <td class="error-text"><%= err.errorMessage %></td>
+          <td><button class="btn-small" onclick="this.nextElementSibling.classList.toggle('show')">Show</button><pre class="stack-trace"><%= err.stackTrace || 'N/A' %></pre></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>

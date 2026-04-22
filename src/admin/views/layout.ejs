@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravianBot Admin</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="logo">
+      <h2>🤖 TravianBot</h2>
+      <span class="subtitle">Admin Panel</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="/" class="<%= path === '/' ? 'active' : '' %>">📊 Dashboard</a></li>
+      <li><a href="/commands" class="<%= path === '/commands' ? 'active' : '' %>">📋 Command Logs</a></li>
+      <li><a href="/errors" class="<%= path === '/errors' ? 'active' : '' %>">🐛 Error Logs</a></li>
+    </ul>
+  </nav>
+
+  <main class="content">
+    <%- body %>
+  </main>
+</body>
+</html>

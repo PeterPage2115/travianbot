@@ -4,6 +4,8 @@ import { createDiscordClient, setupGracefulShutdown } from './discord/client.js'
 import { handleInteraction } from './discord/commandRouter.js';
 import { registerSlashCommands } from './discord/commands/register.js';
 import { startImportScheduler } from './travian/scheduler.js';
+import { createAdminServer } from './admin/server.js';
+import { logCommand, logError } from './admin/metrics.js';
 import { logger } from './logger.js';
 import './discord/commands/definitions/allianceNear.js';
 import './discord/commands/definitions/enemyNear.js';
@@ -20,7 +22,6 @@ import './discord/commands/definitions/help.js';
 import './discord/commands/definitions/tribeSearch.js';
 import './discord/commands/definitions/lastUpdate.js';
 import './discord/commands/definitions/wotwInfo.js';
-import './discord/commands/definitions/allianceStats.js';
 import './discord/commands/definitions/playerInfo.js';
 import './discord/commands/definitions/distance.js';
 
@@ -30,6 +31,9 @@ async function main() {
   const config = loadEnv();
   logger.info({ nodeEnv: config.NODE_ENV }, 'Environment loaded');
   logger.info({ database: sanitizeDatabaseUrl(config.DATABASE_URL) }, 'Database configured');
+
+  const adminPort = parseInt(process.env.ADMIN_PORT || '3001', 10);
+  createAdminServer(adminPort);
 
   const prisma = getPrismaClient();
   const client = createDiscordClient();
@@ -45,7 +49,48 @@ async function main() {
   });
 
   client.on('interactionCreate', async (interaction) => {
-    await handleInteraction(interaction, prisma, config);
+    if (!interaction.isChatInputCommand()) return;
+
+    const startTime = Date.now();
+    const userName = interaction.user.username;
+    const guildName = interaction.guild?.name ?? '';
+
+    try {
+      await handleInteraction(interaction, prisma, config);
+      const duration = Date.now() - startTime;
+      logCommand({
+        userId: interaction.user.id,
+        userName,
+        guildId: interaction.guildId ?? '',
+        guildName,
+        commandName: interaction.commandName,
+        success: true,
+        durationMs: duration,
+        errorMessage: null,
+      });
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const stackTrace = error instanceof Error ? error.stack ?? null : null;
+      logCommand({
+        userId: interaction.user.id,
+        userName,
+        guildId: interaction.guildId ?? '',
+        guildName,
+        commandName: interaction.commandName,
+        success: false,
+        durationMs: duration,
+        errorMessage,
+      });
+      logError({
+        commandName: interaction.commandName,
+        userId: interaction.user.id,
+        userName,
+        guildId: interaction.guildId ?? '',
+        errorMessage,
+        stackTrace,
+      });
+    }
   });
 
   client.on('error', (error) => {

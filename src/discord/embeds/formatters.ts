@@ -218,40 +218,6 @@ export function createHelpEmbed(
   return embed;
 }
 
-export function createAllianceStatsEmbed(
-  lang: SupportedLanguage,
-  title: string,
-  stats: {
-    tag: string;
-    totalPlayers: number;
-    totalVillages: number;
-    totalPopulation: number;
-    avgPopulationPerVillage: number;
-    topPlayers: Array<{ name: string; villageCount: number; totalPopulation: number }>;
-  },
-  color: number = 0x3498db
-): EmbedBuilder {
-  const embed = new EmbedBuilder()
-    .setTitle(title)
-    .setColor(color);
-
-  embed.addFields(
-    { name: translate(lang, 'alliance_stats.players'), value: stats.totalPlayers.toString(), inline: true },
-    { name: translate(lang, 'alliance_stats.villages'), value: stats.totalVillages.toString(), inline: true },
-    { name: translate(lang, 'alliance_stats.total_pop'), value: stats.totalPopulation.toLocaleString(), inline: true },
-    { name: translate(lang, 'alliance_stats.avg_pop'), value: stats.avgPopulationPerVillage.toString(), inline: true },
-  );
-
-  if (stats.topPlayers.length > 0) {
-    const topList = stats.topPlayers
-      .map((p, i) => translate(lang, 'alliance_stats.top_player_entry', { rank: i + 1, name: p.name, villages: p.villageCount, pop: p.totalPopulation.toLocaleString() }))
-      .join('\n');
-    embed.addFields({ name: translate(lang, 'alliance_stats.top_players'), value: topList, inline: false });
-  }
-
-  return embed;
-}
-
 export function createPlayerInfoEmbed(
   lang: SupportedLanguage,
   title: string,
