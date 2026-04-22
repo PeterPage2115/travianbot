@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
+import fs from 'fs';
 
 export interface CommandLogEntry {
   id: number;
@@ -43,7 +44,6 @@ let db: Database.Database | null = null;
 export function getMetricsDb(): Database.Database {
   if (!db) {
     const dbPath = resolve(process.cwd(), 'data', 'metrics.db');
-    const fs = require('fs');
     const dataDir = resolve(process.cwd(), 'data');
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
