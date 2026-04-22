@@ -84,7 +84,7 @@ describe('Embed Formatters', () => {
       const data = embed.toJSON();
       expect(data.fields).toHaveLength(2);
       expect(data.fields?.[0].name).toBe('ENEMY');
-      expect(data.fields?.[0].value).toBe('Status: enemy');
+      expect(data.fields?.[0].value).toBe('Enemy');
     });
 
     it('should show empty message when no statuses', () => {

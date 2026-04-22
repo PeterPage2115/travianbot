@@ -34,11 +34,6 @@ export async function getAllianceStats(
 
   if (!latestSnapshot) return null;
 
-  const players = await prisma.player.findMany({
-    where: { serverId, allianceId: alliance.id },
-    select: { name: true, playerId: true },
-  });
-
   const villageSnapshots = await prisma.villageSnapshot.findMany({
     where: {
       snapshotId: latestSnapshot.id,
@@ -53,26 +48,39 @@ export async function getAllianceStats(
   const totalPopulation = villageSnapshots.reduce((sum, vs) => sum + vs.population, 0);
   const avgPopulationPerVillage = totalVillages > 0 ? totalPopulation / totalVillages : 0;
 
-  const playerStats = new Map<number, { name: string; villageCount: number; totalPopulation: number }>();
-  for (const player of players) {
-    playerStats.set(player.playerId, { name: player.name, villageCount: 0, totalPopulation: 0 });
-  }
-
+  const playerStatsMap = new Map<number, { villageCount: number; totalPopulation: number }>();
   for (const vs of villageSnapshots) {
-    if (vs.village.playerId !== null && playerStats.has(vs.village.playerId)) {
-      const stats = playerStats.get(vs.village.playerId)!;
-      stats.villageCount++;
-      stats.totalPopulation += vs.population;
-    }
+    const pid = vs.village.playerId;
+    if (pid === null) continue;
+    const existing = playerStatsMap.get(pid) ?? { villageCount: 0, totalPopulation: 0 };
+    existing.villageCount++;
+    existing.totalPopulation += vs.population;
+    playerStatsMap.set(pid, existing);
   }
 
-  const topPlayers = Array.from(playerStats.values())
+  const playerIds = Array.from(playerStatsMap.keys());
+  const players = playerIds.length > 0 ? await prisma.player.findMany({
+    where: { serverId, playerId: { in: playerIds } },
+    select: { playerId: true, name: true },
+  }) : [];
+
+  const playerNameMap = new Map<number, string>();
+  for (const p of players) {
+    playerNameMap.set(p.playerId, p.name);
+  }
+
+  const topPlayers = Array.from(playerStatsMap.entries())
+    .map(([playerId, stats]) => ({
+      name: playerNameMap.get(playerId) ?? `Player ${playerId}`,
+      villageCount: stats.villageCount,
+      totalPopulation: stats.totalPopulation,
+    }))
     .sort((a, b) => b.totalPopulation - a.totalPopulation)
     .slice(0, 10);
 
   return {
     tag: alliance.tag,
-    totalPlayers: players.length,
+    totalPlayers: playerStatsMap.size,
     totalVillages,
     totalPopulation,
     avgPopulationPerVillage: Math.round(avgPopulationPerVillage * 100) / 100,

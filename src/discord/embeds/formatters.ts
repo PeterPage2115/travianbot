@@ -142,7 +142,7 @@ export function createDiplomacyListEmbed(
 
   const fields: APIEmbedField[] = statuses.map(s => ({
     name: s.allianceTag,
-    value: `Status: ${s.status}`,
+    value: `${translate(lang, `diplomacy.status.${s.status}` as TranslationKey)}`,
     inline: true,
   }));
 
@@ -219,7 +219,7 @@ export function createAllianceStatsEmbed(
 
   if (stats.topPlayers.length > 0) {
     const topList = stats.topPlayers
-      .map((p, i) => `${i + 1}. **${p.name}** — ${p.villageCount} villages, ${p.totalPopulation.toLocaleString()} pop`)
+      .map((p, i) => translate(lang, 'alliance_stats.top_player_entry', { rank: i + 1, name: p.name, villages: p.villageCount, pop: p.totalPopulation.toLocaleString() }))
       .join('\n');
     embed.addFields({ name: translate(lang, 'alliance_stats.top_players'), value: topList, inline: false });
   }

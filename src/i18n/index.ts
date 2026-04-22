@@ -27,14 +27,23 @@ export function normalizeLanguage(value: string | null | undefined): SupportedLa
 }
 
 function interpolate(template: string, vars: Record<string, string | number | boolean | null | undefined>): string {
-  return template.replace(/\{(\w+)(?:,\s*select,\s*(\w+)\s*\{([^}]*)\s*(\w+)\s*\{([^}]*)\}\s*\})?\}/g, (match, key, _type, defaultVal, optionKey, optionVal) => {
-    if (optionKey && optionVal && defaultVal) {
-      const val = String(vars[key] ?? '');
-      return val === optionKey ? optionVal.trim() : defaultVal.trim();
-    }
+  const selectRegex = /\{(\w+),\s*select,\s*(\w+)\s*\{([^}]*)\}\s*(\w+)\s*\{([^}]*)\}\}/g;
+  const simpleRegex = /\{(\w+)\}/g;
+
+  let result = template.replace(selectRegex, (match, key, option1, val1, option2, val2) => {
+    const val = String(vars[key] ?? '');
+    const lowerVal = val.toLowerCase();
+    if (lowerVal === option1.toLowerCase()) return val1.trim();
+    if (lowerVal === option2.toLowerCase()) return val2.trim();
+    return val1.trim();
+  });
+
+  result = result.replace(simpleRegex, (match, key) => {
     const val = vars[key];
     return val !== undefined && val !== null ? String(val) : match;
   });
+
+  return result;
 }
 
 export function translate(language: string | null | undefined, key: TranslationKey, vars?: Record<string, string | number | boolean | null | undefined>): string {
