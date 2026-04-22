@@ -41,9 +41,7 @@ jobs:
         run: npx prisma generate
 
       - name: Sync database schema
-        run: npx prisma db push --accept-data-loss
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/travianbot_test
+        run: npx prisma db push --accept-data-loss --url "postgresql://test:test@localhost:5432/travianbot_test"
 
       - name: Type check
         run: npm run typecheck
@@ -51,12 +49,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Create test .env file
+        run: |
+          echo "DATABASE_URL=postgresql://test:test@localhost:5432/travianbot_test" > .env
+          echo "DISCORD_TOKEN=dummy-token" >> .env
+          echo "DISCORD_CLIENT_ID=dummy-client-id" >> .env
+          echo "TRAVIAN_SERVER_URL=https://example.com" >> .env
+          echo "MAP_SQL_URL=https://example.com/map.sql" >> .env
+          echo "NODE_ENV=test" >> .env
+
       - name: Run tests
         run: npm run ci:test
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/travianbot_test
-          DISCORD_TOKEN: dummy-token
-          DISCORD_CLIENT_ID: dummy-client-id
-          TRAVIAN_SERVER_URL: https://example.com
-          MAP_SQL_URL: https://example.com/map.sql
-          NODE_ENV: test
