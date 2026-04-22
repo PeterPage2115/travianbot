@@ -179,30 +179,26 @@ async function handleInactiveSearch(
   await interaction.deferReply();
 
   const limit = interaction.options.getInteger('limit') ?? 10;
+  const x = interaction.options.getInteger('x');
+  const y = interaction.options.getInteger('y');
+  const radius = interaction.options.getInteger('radius') ?? undefined;
 
-  const result = await findInactiveCandidates(prisma, config.SERVER_ID, { limit });
+  const options: Parameters<typeof findInactiveCandidates>[2] = { limit };
+  if (x !== null && y !== null) {
+    options.center = { x, y };
+    options.radius = radius ?? 50;
+  }
+
+  const result = await findInactiveCandidates(prisma, config.SERVER_ID, options);
+
+  const title = x !== null && y !== null
+    ? translate(lang, 'inactive_search.title_near', { x, y, radius: options.radius })
+    : translate(lang, 'inactive_search.title');
 
   const embed = createInactiveReportEmbed(
     lang,
-    translate(lang, 'inactive_search.title'),
-    result.villages.map(v => {
-      const reasons: string[] = [];
-      const exp = v.explanation;
-      if (exp.unchangedSteps > 0) reasons.push(`${exp.unchangedSteps} unchanged snapshots`);
-      if (exp.populationRange !== null && exp.populationRange <= 5) reasons.push(`Pop range: ${exp.populationRange}`);
-      if (exp.totalDelta !== null && exp.totalDelta <= 5) reasons.push(`Total delta: ${exp.totalDelta}`);
-      if (exp.stableStepRatio >= 0.75) reasons.push(`Stable: ${(exp.stableStepRatio * 100).toFixed(0)}%`);
-      if (reasons.length === 0) reasons.push(translate(lang, 'inactive_search.no_change'));
-
-      return {
-        ...v,
-        explanation: {
-          score: v.inactivityScore,
-          isCandidate: true,
-          reasons,
-        },
-      };
-    }),
+    title,
+    result.villages,
     result.totalMatched,
     result.hasMore
   );

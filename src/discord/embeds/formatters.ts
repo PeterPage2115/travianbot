@@ -1,5 +1,6 @@
 import { EmbedBuilder, APIEmbedField } from 'discord.js';
 import { translate, TranslationKey, SupportedLanguage } from '../../i18n/index.js';
+import { InactiveScoreExplanation } from '../../travian/inactiveHeuristics.js';
 
 export interface VillageEntry {
   villageId: number;
@@ -18,11 +19,8 @@ export interface VillageWithDistance extends VillageEntry {
 export interface InactiveCandidate extends VillageEntry {
   inactivityScore: number;
   label: string;
-  explanation: {
-    score: number;
-    isCandidate: boolean;
-    reasons: string[];
-  };
+  explanation: InactiveScoreExplanation;
+  populationHistory?: Array<{ snapshotAt: Date; population: number }>;
 }
 
 export function createVillageListEmbed(
@@ -112,13 +110,40 @@ export function createInactiveReportEmbed(
 
   const tPlayer = translate(lang, 'village.player');
   const tPop = translate(lang, 'village.pop');
+  const tAlliance = translate(lang, 'village.alliance');
   const tReasons = translate(lang, 'inactive_search.reasons');
+  const tPopTrend = translate(lang, 'inactive_search.pop_trend');
+  const tNoChange = translate(lang, 'inactive_search.no_change');
 
-  const fields: APIEmbedField[] = candidates.map(c => ({
-    name: `${c.name} (${c.x}|${c.y}) — Score: ${c.inactivityScore}`,
-    value: `${tPlayer}: ${c.playerName ?? '—'} | ${tPop}: ${c.population}\n${tReasons}: ${c.explanation.reasons.join(', ') || translate(lang, 'inactive_search.no_change')}`,
-    inline: false,
-  }));
+  const fields: APIEmbedField[] = candidates.map(c => {
+    const exp = c.explanation;
+    const reasons: string[] = [];
+    if (exp.unchangedSteps > 0) reasons.push(`${exp.unchangedSteps} unchanged snapshots`);
+    if (exp.populationRange !== null && exp.populationRange <= 5) reasons.push(`Pop range: ${exp.populationRange}`);
+    if (exp.totalDelta !== null && Math.abs(exp.totalDelta) <= 5) reasons.push(`Total delta: ${exp.totalDelta}`);
+    if (exp.stableStepRatio >= 0.75) reasons.push(`Stable: ${(exp.stableStepRatio * 100).toFixed(0)}%`);
+    if (reasons.length === 0) reasons.push(tNoChange);
+
+    let value = `${tPlayer}: ${c.playerName ?? '—'} | ${tPop}: ${c.population}`;
+    if (c.allianceTag) value += ` | ${tAlliance}: ${c.allianceTag}`;
+
+    if (c.populationHistory && c.populationHistory.length > 1) {
+      const first = c.populationHistory[0];
+      const last = c.populationHistory[c.populationHistory.length - 1];
+      const delta = last.population - first.population;
+      const deltaStr = delta >= 0 ? `+${delta}` : `${delta}`;
+      const trend = delta > 0 ? '📈' : delta < 0 ? '📉' : '➡️';
+      value += `\n${tPopTrend}: ${trend} ${deltaStr} (${first.population} → ${last.population})`;
+    }
+
+    value += `\n${tReasons}: ${reasons.join(', ')}`;
+
+    return {
+      name: `${c.name} (${c.x}|${c.y}) — Score: ${c.inactivityScore}`,
+      value,
+      inline: false,
+    };
+  });
 
   embed.addFields(fields);
 

@@ -11,10 +11,13 @@ export interface InactiveCandidateVillage extends VillageWithSnapshot {
   inactivityScore: number;
   label: 'likely inactive';
   explanation: InactiveScoreExplanation;
+  populationHistory: Array<{ snapshotAt: Date; population: number }>;
 }
 
 export interface FindInactiveCandidatesOptions extends QueryOptions {
   heuristics?: Partial<InactiveHeuristicsConfig>;
+  center?: { x: number; y: number };
+  radius?: number;
 }
 
 export interface InactiveCandidateQueryResult extends QueryResult<InactiveCandidateVillage> {
@@ -25,6 +28,10 @@ export interface InactiveCandidateQueryResult extends QueryResult<InactiveCandid
     requestedSnapshotCount: number;
     consideredSnapshotCount: number;
   };
+}
+
+function distance(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
 /**
@@ -87,6 +94,9 @@ export async function findInactiveCandidates(
     },
     include: {
       snapshot: true
+    },
+    orderBy: {
+      snapshot: { snapshotAt: 'asc' }
     }
   });
 
@@ -100,6 +110,15 @@ export async function findInactiveCandidates(
 
   const candidates = latestVillageSnapshots
     .map(latestVillageSnapshot => {
+      const village = latestVillageSnapshot.village;
+
+      if (options.center && options.radius) {
+        const dist = distance(options.center.x, options.center.y, village.x, village.y);
+        if (dist > options.radius) {
+          return null;
+        }
+      }
+
       const history = (historyByVillageId.get(latestVillageSnapshot.villageId) ?? []).map(snapshot => ({
         snapshotId: snapshot.snapshotId,
         snapshotAt: snapshot.snapshot.snapshotAt,
@@ -112,16 +131,17 @@ export async function findInactiveCandidates(
       }
 
       return {
-        villageId: latestVillageSnapshot.village.villageId,
-        name: latestVillageSnapshot.village.name,
-        x: latestVillageSnapshot.village.x,
-        y: latestVillageSnapshot.village.y,
+        villageId: village.villageId,
+        name: village.name,
+        x: village.x,
+        y: village.y,
         population: latestVillageSnapshot.population,
-        playerName: latestVillageSnapshot.village.player?.name ?? null,
-        allianceTag: latestVillageSnapshot.village.alliance?.tag ?? null,
+        playerName: village.player?.name ?? null,
+        allianceTag: village.alliance?.tag ?? null,
         inactivityScore: explanation.score,
         label: 'likely inactive' as const,
-        explanation
+        explanation,
+        populationHistory: history.map(h => ({ snapshotAt: h.snapshotAt, population: h.population }))
       };
     })
     .filter((village): village is InactiveCandidateVillage => village !== null)

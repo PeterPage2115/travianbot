@@ -27,18 +27,29 @@ export function normalizeLanguage(value: string | null | undefined): SupportedLa
 }
 
 function interpolate(template: string, vars: Record<string, string | number | boolean | null | undefined>): string {
-  const selectRegex = /\{(\w+),\s*select,\s*(\w+)\s*\{([^}]*)\}\s*(\w+)\s*\{([^}]*)\}\}/g;
-  const simpleRegex = /\{(\w+)\}/g;
+  // Handle ICU Select format: {key, select, option1 {val1} other {val2}}
+  const selectRegex = /\{(\w+),\s*select,\s*((?:\w+\s*\{[^{}]*\}\s*)+)\}/g;
 
-  let result = template.replace(selectRegex, (match, key, option1, val1, option2, val2) => {
-    const val = String(vars[key] ?? '');
-    const lowerVal = val.toLowerCase();
-    if (lowerVal === option1.toLowerCase()) return val1.trim();
-    if (lowerVal === option2.toLowerCase()) return val2.trim();
-    return val1.trim();
+  let result = template.replace(selectRegex, (match, key, optionsStr) => {
+    const val = String(vars[key] ?? '').toLowerCase();
+    const optionRegex = /(\w+)\s*\{([^{}]*)\}/g;
+    let defaultVal = '';
+    let matchedVal = '';
+    let optMatch;
+    while ((optMatch = optionRegex.exec(optionsStr)) !== null) {
+      const [, optKey, optVal] = optMatch;
+      if (optKey === 'other') {
+        defaultVal = optVal.trim();
+      }
+      if (optKey.toLowerCase() === val) {
+        matchedVal = optVal.trim();
+      }
+    }
+    return matchedVal || defaultVal;
   });
 
-  result = result.replace(simpleRegex, (match, key) => {
+  // Handle simple variables: {key}
+  result = result.replace(/\{(\w+)\}/g, (match, key) => {
     const val = vars[key];
     return val !== undefined && val !== null ? String(val) : match;
   });
