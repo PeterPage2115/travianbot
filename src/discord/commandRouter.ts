@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { EnvConfig } from '../config/env.js';
 import { logger } from '../logger.js';
 import { requireAdmin, handleCommandError } from './commands/handler.js';
+import { resolveStoredLanguagePreference } from '../settings/languagePreferences.js';
+import { translate, SupportedLanguage } from '../i18n/index.js';
 import { findAllianceVillagesNear } from '../travian/queries/findAllianceVillagesNear.js';
 import { findEnemyVillagesNearForGuild } from '../travian/diplomacy/enemyQueries.js';
 import { findInactiveCandidates } from '../travian/queries/findInactiveCandidates.js';
@@ -38,6 +40,13 @@ import {
   createWotwInfoEmbed,
 } from './embeds/formatters.js';
 
+async function getLang(interaction: Interaction, prisma: PrismaClient): Promise<SupportedLanguage> {
+  if (!interaction.guildId || !interaction.isChatInputCommand()) {
+    return 'en';
+  }
+  return resolveStoredLanguagePreference(prisma, interaction.guildId, interaction.user.id);
+}
+
 export async function handleInteraction(
   interaction: Interaction,
   prisma: PrismaClient,
@@ -46,66 +55,67 @@ export async function handleInteraction(
   if (!interaction.isChatInputCommand()) return;
 
   const commandName = interaction.commandName;
+  const lang = await getLang(interaction, prisma);
 
   try {
     switch (commandName) {
       case 'alliance-near':
-        await handleAllianceNear(interaction, prisma, config);
+        await handleAllianceNear(interaction, prisma, config, lang);
         break;
       case 'enemy-near':
-        await handleEnemyNear(interaction, prisma, config);
+        await handleEnemyNear(interaction, prisma, config, lang);
         break;
       case 'inactive-search':
-        await handleInactiveSearch(interaction, prisma, config);
+        await handleInactiveSearch(interaction, prisma, config, lang);
         break;
       case 'alliance-villages':
-        await handleAllianceVillages(interaction, prisma, config);
+        await handleAllianceVillages(interaction, prisma, config, lang);
         break;
       case 'player-villages':
-        await handlePlayerVillages(interaction, prisma, config);
+        await handlePlayerVillages(interaction, prisma, config, lang);
         break;
       case 'diplomacy-set':
-        await handleDiplomacySet(interaction, prisma, config);
+        await handleDiplomacySet(interaction, prisma, config, lang);
         break;
       case 'diplomacy-list':
-        await handleDiplomacyList(interaction, prisma, config);
+        await handleDiplomacyList(interaction, prisma, config, lang);
         break;
       case 'diplomacy-remove':
-        await handleDiplomacyRemove(interaction, prisma, config);
+        await handleDiplomacyRemove(interaction, prisma, config, lang);
         break;
       case 'settings-language':
-        await handleSettingsLanguage(interaction, prisma, config);
+        await handleSettingsLanguage(interaction, prisma, config, lang);
         break;
       case 'map-refresh':
-        await handleMapRefresh(interaction, prisma, config);
+        await handleMapRefresh(interaction, prisma, config, lang);
         break;
       case 'help':
-        await handleHelp(interaction);
+        await handleHelp(interaction, lang);
         break;
       case 'tribe-search':
-        await handleTribeSearch(interaction, prisma, config);
+        await handleTribeSearch(interaction, prisma, config, lang);
         break;
       case 'alliance-stats':
-        await handleAllianceStats(interaction, prisma, config);
+        await handleAllianceStats(interaction, prisma, config, lang);
         break;
       case 'player-info':
-        await handlePlayerInfo(interaction, prisma, config);
+        await handlePlayerInfo(interaction, prisma, config, lang);
         break;
       case 'distance':
-        await handleDistance(interaction, config);
+        await handleDistance(interaction, config, lang);
         break;
       case 'last-update':
-        await handleLastUpdate(interaction, prisma, config);
+        await handleLastUpdate(interaction, prisma, config, lang);
         break;
       case 'wotw-info':
-        await handleWotwInfo(interaction, prisma, config);
+        await handleWotwInfo(interaction, prisma, config, lang);
         break;
       case 'server-info':
-        await handleServerInfo(interaction, prisma, config);
+        await handleServerInfo(interaction, prisma, config, lang);
         break;
       default:
         logger.warn({ commandName }, 'Unknown command received');
-        await interaction.reply({ content: 'Unknown command. Use `/help` to see available commands.', ephemeral: true });
+        await interaction.reply({ content: translate(lang, 'common.unknown_command'), ephemeral: true });
     }
   } catch (error) {
     await handleCommandError(interaction, error);
@@ -115,7 +125,8 @@ export async function handleInteraction(
 async function handleAllianceNear(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -127,12 +138,8 @@ async function handleAllianceNear(
 
   const result = await findAllianceVillagesNear(prisma, config.SERVER_ID, tag, { x, y }, radius, { limit });
 
-  const embed = createVillageWithDistanceEmbed(
-    `Alliance ${tag} near ${x}|${y} (radius: ${radius})`,
-    result.villages,
-    result.totalMatched,
-    result.hasMore
-  );
+  const title = translate(lang, 'alliance_near.title', { tag, x, y, radius });
+  const embed = createVillageWithDistanceEmbed(lang, title, result.villages, result.totalMatched, result.hasMore);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -140,7 +147,8 @@ async function handleAllianceNear(
 async function handleEnemyNear(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -150,19 +158,14 @@ async function handleEnemyNear(
   const limit = interaction.options.getInteger('limit') ?? 10;
 
   if (!interaction.guildId) {
-    await interaction.editReply({ content: 'This command can only be used in a server.' });
+    await interaction.editReply({ content: translate(lang, 'common.guild_only') });
     return;
   }
 
   const result = await findEnemyVillagesNearForGuild(prisma, interaction.guildId, config.SERVER_ID, { x, y }, radius, { limit });
 
-  const embed = createVillageWithDistanceEmbed(
-    `Enemy villages near ${x}|${y} (radius: ${radius})`,
-    result.villages,
-    result.totalMatched,
-    result.hasMore,
-    0xe74c3c
-  );
+  const title = translate(lang, 'enemy_near.title', { x, y, radius });
+  const embed = createVillageWithDistanceEmbed(lang, title, result.villages, result.totalMatched, result.hasMore, 0xe74c3c);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -170,7 +173,8 @@ async function handleEnemyNear(
 async function handleInactiveSearch(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -179,7 +183,8 @@ async function handleInactiveSearch(
   const result = await findInactiveCandidates(prisma, config.SERVER_ID, { limit });
 
   const embed = createInactiveReportEmbed(
-    'Inactive Candidates',
+    lang,
+    translate(lang, 'inactive_search.title'),
     result.villages.map(v => {
       const reasons: string[] = [];
       const exp = v.explanation;
@@ -187,7 +192,7 @@ async function handleInactiveSearch(
       if (exp.populationRange !== null && exp.populationRange <= 5) reasons.push(`Pop range: ${exp.populationRange}`);
       if (exp.totalDelta !== null && exp.totalDelta <= 5) reasons.push(`Total delta: ${exp.totalDelta}`);
       if (exp.stableStepRatio >= 0.75) reasons.push(`Stable: ${(exp.stableStepRatio * 100).toFixed(0)}%`);
-      if (reasons.length === 0) reasons.push('No significant population change');
+      if (reasons.length === 0) reasons.push(translate(lang, 'inactive_search.no_change'));
 
       return {
         ...v,
@@ -208,7 +213,8 @@ async function handleInactiveSearch(
 async function handleAllianceVillages(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -217,12 +223,8 @@ async function handleAllianceVillages(
 
   const result = await listAllianceVillages(prisma, config.SERVER_ID, tag, { limit });
 
-  const embed = createVillageListEmbed(
-    `Alliance ${tag} Villages`,
-    result.villages,
-    result.totalMatched,
-    result.hasMore
-  );
+  const title = translate(lang, 'alliance_villages.title', { tag });
+  const embed = createVillageListEmbed(lang, title, result.villages, result.totalMatched, result.hasMore);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -230,7 +232,8 @@ async function handleAllianceVillages(
 async function handlePlayerVillages(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -239,12 +242,8 @@ async function handlePlayerVillages(
 
   const result = await listPlayerVillages(prisma, config.SERVER_ID, name, { limit });
 
-  const embed = createVillageListEmbed(
-    `Player ${name} Villages`,
-    result.villages,
-    result.totalMatched,
-    result.hasMore
-  );
+  const title = translate(lang, 'player_villages.title', { name });
+  const embed = createVillageListEmbed(lang, title, result.villages, result.totalMatched, result.hasMore);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -252,10 +251,11 @@ async function handlePlayerVillages(
 async function handleDiplomacySet(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   if (!interaction.guildId) {
-    await interaction.reply({ content: 'This command can only be used in a server.', ephemeral: true });
+    await interaction.reply({ content: translate(lang, 'common.guild_only'), ephemeral: true });
     return;
   }
 
@@ -268,25 +268,27 @@ async function handleDiplomacySet(
 
   await setAllianceDiplomacyStatus(prisma, interaction.guildId, tag, status);
 
-  await interaction.editReply({ content: `Diplomacy set: ${tag} → ${status}` });
+  await interaction.editReply({ content: translate(lang, 'diplomacy.updated', { tag, status }) });
 }
 
 async function handleDiplomacyList(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
   if (!interaction.guildId) {
-    await interaction.editReply({ content: 'This command can only be used in a server.' });
+    await interaction.editReply({ content: translate(lang, 'common.guild_only') });
     return;
   }
 
   const states = await listDiplomacyStates(prisma, interaction.guildId);
 
   const embed = createDiplomacyListEmbed(
-    'Diplomacy Settings',
+    lang,
+    translate(lang, 'diplomacy.list_title'),
     states.map(s => ({ allianceTag: s.allianceTag, status: s.status }))
   );
 
@@ -296,10 +298,11 @@ async function handleDiplomacyList(
 async function handleDiplomacyRemove(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   if (!interaction.guildId) {
-    await interaction.reply({ content: 'This command can only be used in a server.', ephemeral: true });
+    await interaction.reply({ content: translate(lang, 'common.guild_only'), ephemeral: true });
     return;
   }
 
@@ -311,17 +314,20 @@ async function handleDiplomacyRemove(
   const removed = await removeAllianceDiplomacyStatus(prisma, interaction.guildId, tag);
 
   await interaction.editReply({
-    content: removed ? `Diplomacy removed for ${tag}` : `No diplomacy setting found for ${tag}`,
+    content: removed
+      ? translate(lang, 'diplomacy.removed', { tag })
+      : translate(lang, 'diplomacy.not_found', { tag }),
   });
 }
 
 async function handleSettingsLanguage(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   if (!interaction.guildId) {
-    await interaction.reply({ content: 'This command can only be used in a server.', ephemeral: true });
+    await interaction.reply({ content: translate(lang, 'common.guild_only'), ephemeral: true });
     return;
   }
 
@@ -332,18 +338,19 @@ async function handleSettingsLanguage(
     if (!await requireAdmin(config, interaction)) return;
     await interaction.deferReply();
     await setGuildDefaultLanguage(prisma, interaction.guildId, language);
-    await interaction.editReply({ content: `Server language set to ${language}.` });
+    await interaction.editReply({ content: translate(lang, 'settings.language.updated_server', { language }) });
   } else {
     await interaction.deferReply();
     await setUserLanguageOverride(prisma, interaction.user.id, language);
-    await interaction.editReply({ content: `Your language preference set to ${language}.` });
+    await interaction.editReply({ content: translate(lang, 'settings.language.updated_user', { language }) });
   }
 }
 
 async function handleMapRefresh(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   if (!await requireAdmin(config, interaction)) return;
 
@@ -351,12 +358,12 @@ async function handleMapRefresh(
 
   const result = await importMapSnapshot(prisma, config.SERVER_ID, config.MAP_SQL_URL, config.SERVER_NAME);
 
-  const embed = createServerInfoEmbed('Map Refresh Complete', {
-    'Snapshot ID': result.snapshotId.toString(),
-    'Snapshot At': result.snapshotAt.toISOString(),
-    'Total Villages': result.totalVillages.toString(),
-    'Total Players': result.totalPlayers.toString(),
-    'Total Alliances': result.totalAlliances.toString(),
+  const embed = createServerInfoEmbed(lang, translate(lang, 'server_info.refresh_title'), {
+    [translate(lang, 'server_info.snapshot_id')]: result.snapshotId.toString(),
+    [translate(lang, 'server_info.snapshot_at')]: result.snapshotAt.toISOString(),
+    [translate(lang, 'server_info.total_villages')]: result.totalVillages.toString(),
+    [translate(lang, 'server_info.total_players')]: result.totalPlayers.toString(),
+    [translate(lang, 'server_info.total_alliances')]: result.totalAlliances.toString(),
   });
 
   await interaction.editReply({ embeds: [embed] });
@@ -365,7 +372,8 @@ async function handleMapRefresh(
 async function handleServerInfo(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -379,21 +387,22 @@ async function handleServerInfo(
   });
 
   const info: Record<string, string> = {
-    'Server ID': config.SERVER_ID.toString(),
-    'Server Name': server?.name ?? 'Not configured',
-    'Latest Snapshot': latestSnapshot ? latestSnapshot.snapshotAt.toISOString() : 'None',
-    'Total Villages': latestSnapshot?.totalVillages.toString() ?? 'N/A',
-    'Total Players': latestSnapshot?.totalPlayers.toString() ?? 'N/A',
-    'Total Alliances': latestSnapshot?.totalAlliances.toString() ?? 'N/A',
+    [translate(lang, 'server_info.server_id')]: config.SERVER_ID.toString(),
+    [translate(lang, 'server_info.server_name')]: server?.name ?? translate(lang, 'server_info.not_configured'),
+    [translate(lang, 'server_info.latest_snapshot')]: latestSnapshot ? latestSnapshot.snapshotAt.toISOString() : translate(lang, 'server_info.none'),
+    [translate(lang, 'server_info.total_villages')]: latestSnapshot?.totalVillages.toString() ?? 'N/A',
+    [translate(lang, 'server_info.total_players')]: latestSnapshot?.totalPlayers.toString() ?? 'N/A',
+    [translate(lang, 'server_info.total_alliances')]: latestSnapshot?.totalAlliances.toString() ?? 'N/A',
   };
 
-  const embed = createServerInfoEmbed('Server Information', info);
+  const embed = createServerInfoEmbed(lang, translate(lang, 'server_info.title'), info);
 
   await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleHelp(
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -412,12 +421,12 @@ async function handleHelp(
     { name: 'diplomacy-set', description: 'Set diplomacy status for an alliance (admin only). Options: tag, status' },
     { name: 'diplomacy-list', description: 'List all diplomacy settings for this server' },
     { name: 'diplomacy-remove', description: 'Remove diplomacy status for an alliance (admin only). Options: tag' },
-    { name: 'settings-language', description: 'Set language preference for this server (admin only). Options: language' },
+    { name: 'settings-language', description: 'Set language preference (user or server). Options: language, scope' },
     { name: 'map-refresh', description: 'Manually trigger a map.sql import (admin only)' },
     { name: 'server-info', description: 'Show current server and snapshot information' },
   ];
 
-  const embed = createHelpEmbed('Travian Bot Commands', commands);
+  const embed = createHelpEmbed(lang, translate(lang, 'help.title'), commands);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -425,14 +434,15 @@ async function handleHelp(
 async function handleTribeSearch(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
   const tribeKey = interaction.options.getString('tribe', true);
   const tribeId = Object.entries(TRIBE_ID_MAP).find(([, key]) => key === tribeKey)?.[0];
   if (!tribeId) {
-    await interaction.editReply({ content: 'Unknown tribe selected.' });
+    await interaction.editReply({ content: translate(lang, 'tribe_search.unknown') });
     return;
   }
 
@@ -449,11 +459,12 @@ async function handleTribeSearch(
 
   const result = await findVillagesByTribe(prisma, config.SERVER_ID, parseInt(tribeId), options);
 
+  const tribeName = TRIBE_DISPLAY_NAMES[tribeKey] ?? tribeKey;
   const title = x !== null && y !== null
-    ? `${TRIBE_DISPLAY_NAMES[tribeKey]} villages near ${x}|${y} (radius: ${options.radius})`
-    : `${TRIBE_DISPLAY_NAMES[tribeKey]} villages`;
+    ? translate(lang, 'tribe_search.title', { tribe: tribeName, x, y, radius: options.radius })
+    : translate(lang, 'tribe_search.title_all', { tribe: tribeName });
 
-  const embed = createVillageWithDistanceEmbed(title, result.villages, result.totalMatched, result.hasMore);
+  const embed = createVillageWithDistanceEmbed(lang, title, result.villages, result.totalMatched, result.hasMore);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -461,7 +472,8 @@ async function handleTribeSearch(
 async function handleAllianceStats(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -469,11 +481,11 @@ async function handleAllianceStats(
   const stats = await getAllianceStats(prisma, config.SERVER_ID, tag);
 
   if (!stats) {
-    await interaction.editReply({ content: `Alliance "${tag}" not found.` });
+    await interaction.editReply({ content: translate(lang, 'alliance_stats.not_found', { tag }) });
     return;
   }
 
-  const embed = createAllianceStatsEmbed(`Alliance Stats: ${stats.tag}`, stats);
+  const embed = createAllianceStatsEmbed(lang, translate(lang, 'alliance_stats.title', { tag }), stats);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -481,7 +493,8 @@ async function handleAllianceStats(
 async function handlePlayerInfo(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -489,18 +502,19 @@ async function handlePlayerInfo(
   const info = await getPlayerInfo(prisma, config.SERVER_ID, name);
 
   if (!info) {
-    await interaction.editReply({ content: `Player "${name}" not found.` });
+    await interaction.editReply({ content: translate(lang, 'player_info.not_found', { name }) });
     return;
   }
 
-  const embed = createPlayerInfoEmbed(`Player: ${info.name}`, info);
+  const embed = createPlayerInfoEmbed(lang, translate(lang, 'player_info.title', { name }), info);
 
   await interaction.editReply({ embeds: [embed] });
 }
 
 async function handleDistance(
   interaction: ChatInputCommandInteraction,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -538,8 +552,8 @@ async function handleDistance(
     });
   }
 
-  const title = `Distance: ${x1}|${y1} → ${x2}|${y2}`;
-  const embed = createDistanceEmbed(title, distance, tribeResults);
+  const title = translate(lang, 'distance.title', { x1, y1, x2, y2 });
+  const embed = createDistanceEmbed(lang, title, distance, tribeResults);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -547,7 +561,8 @@ async function handleDistance(
 async function handleLastUpdate(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -557,19 +572,19 @@ async function handleLastUpdate(
   });
 
   if (!latestSnapshot) {
-    await interaction.editReply({ content: 'No map data imported yet. Use `/map-refresh` to import.' });
+    await interaction.editReply({ content: translate(lang, 'server_info.no_data') });
     return;
   }
 
   const info: Record<string, string> = {
-    'Last Update': latestSnapshot.snapshotAt.toISOString(),
-    'Total Villages': latestSnapshot.totalVillages.toLocaleString(),
-    'Total Players': latestSnapshot.totalPlayers.toLocaleString(),
-    'Total Alliances': latestSnapshot.totalAlliances.toLocaleString(),
-    'Next Scheduled Import': 'Daily at midnight (server time)',
+    [translate(lang, 'server_info.last_update')]: latestSnapshot.snapshotAt.toISOString(),
+    [translate(lang, 'server_info.total_villages')]: latestSnapshot.totalVillages.toLocaleString(),
+    [translate(lang, 'server_info.total_players')]: latestSnapshot.totalPlayers.toLocaleString(),
+    [translate(lang, 'server_info.total_alliances')]: latestSnapshot.totalAlliances.toLocaleString(),
+    [translate(lang, 'server_info.next_import')]: translate(lang, 'server_info.next_import_value'),
   };
 
-  const embed = createServerInfoEmbed('Last Map Update', info);
+  const embed = createServerInfoEmbed(lang, translate(lang, 'server_info.last_update_title'), info);
 
   await interaction.editReply({ embeds: [embed] });
 }
@@ -577,7 +592,8 @@ async function handleLastUpdate(
 async function handleWotwInfo(
   interaction: ChatInputCommandInteraction,
   prisma: PrismaClient,
-  config: EnvConfig
+  config: EnvConfig,
+  lang: SupportedLanguage
 ): Promise<void> {
   await interaction.deferReply();
 
@@ -585,7 +601,8 @@ async function handleWotwInfo(
   const result = await getWotwInfo(prisma, config.SERVER_ID, { limit });
 
   const embed = createWotwInfoEmbed(
-    'Victory Points (Wonder of the World)',
+    lang,
+    translate(lang, 'wotw.title'),
     result.villages as Array<{ villageId: number; name: string; x: number; y: number; population: number; playerName: string | null; allianceTag: string | null; victoryPoints: number }>,
     result.totalMatched,
     result.hasMore

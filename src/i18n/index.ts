@@ -26,8 +26,20 @@ export function normalizeLanguage(value: string | null | undefined): SupportedLa
   return isSupportedLanguage(normalized) ? normalized : null;
 }
 
-export function translate(language: string | null | undefined, key: TranslationKey): string {
-  const resolvedLanguage = normalizeLanguage(language) ?? DEFAULT_LANGUAGE;
+function interpolate(template: string, vars: Record<string, string | number | boolean | null | undefined>): string {
+  return template.replace(/\{(\w+)(?:,\s*select,\s*(\w+)\s*\{([^}]*)\s*(\w+)\s*\{([^}]*)\}\s*\})?\}/g, (match, key, _type, defaultVal, optionKey, optionVal) => {
+    if (optionKey && optionVal && defaultVal) {
+      const val = String(vars[key] ?? '');
+      return val === optionKey ? optionVal.trim() : defaultVal.trim();
+    }
+    const val = vars[key];
+    return val !== undefined && val !== null ? String(val) : match;
+  });
+}
 
-  return dictionaries[resolvedLanguage][key] ?? dictionaries.en[key] ?? key;
+export function translate(language: string | null | undefined, key: TranslationKey, vars?: Record<string, string | number | boolean | null | undefined>): string {
+  const resolvedLanguage = normalizeLanguage(language) ?? DEFAULT_LANGUAGE;
+  const template = dictionaries[resolvedLanguage][key] ?? dictionaries.en[key] ?? key;
+
+  return vars ? interpolate(template, vars) : template;
 }

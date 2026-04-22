@@ -16,6 +16,13 @@ import './discord/commands/definitions/diplomacyRemove.js';
 import './discord/commands/definitions/settingsLanguage.js';
 import './discord/commands/definitions/mapRefresh.js';
 import './discord/commands/definitions/serverInfo.js';
+import './discord/commands/definitions/help.js';
+import './discord/commands/definitions/tribeSearch.js';
+import './discord/commands/definitions/lastUpdate.js';
+import './discord/commands/definitions/wotwInfo.js';
+import './discord/commands/definitions/allianceStats.js';
+import './discord/commands/definitions/playerInfo.js';
+import './discord/commands/definitions/distance.js';
 
 async function main() {
   logger.info('Starting Travian Discord Bot...');

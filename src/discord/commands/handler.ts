@@ -1,6 +1,7 @@
 import { Interaction, ChatInputCommandInteraction } from 'discord.js';
 import { EnvConfig } from '../../config/env.js';
 import { logger } from '../../logger.js';
+import { translate } from '../../i18n/index.js';
 
 export function isAdmin(config: EnvConfig, interaction: Interaction): boolean {
   if (!config.ADMIN_ROLE_ID) {
