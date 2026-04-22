@@ -7,13 +7,15 @@ import {
   createServerInfoEmbed,
 } from '../../src/discord/embeds/formatters.js';
 
+const LANG = 'en' as const;
+
 describe('Embed Formatters', () => {
   describe('createVillageListEmbed', () => {
     it('should create embed with villages', () => {
       const villages = [
         { villageId: 1, name: 'Village1', x: 10, y: 20, population: 100, playerName: 'Player1', allianceTag: 'ALL' },
       ];
-      const embed = createVillageListEmbed('Test Title', villages, 1, false);
+      const embed = createVillageListEmbed(LANG, 'Test Title', villages, 1, false);
       const data = embed.toJSON();
       expect(data.title).toBe('Test Title');
       expect(data.fields).toHaveLength(1);
@@ -21,13 +23,13 @@ describe('Embed Formatters', () => {
     });
 
     it('should show empty message when no villages', () => {
-      const embed = createVillageListEmbed('Empty', [], 0, false);
+      const embed = createVillageListEmbed(LANG, 'Empty', [], 0, false);
       const data = embed.toJSON();
       expect(data.description).toBe('No villages found.');
     });
 
     it('should show hasMore footer when true', () => {
-      const embed = createVillageListEmbed('Test', [], 50, true);
+      const embed = createVillageListEmbed(LANG, 'Test', [], 50, true);
       const data = embed.toJSON();
       expect(data.footer?.text).toContain('more available');
     });
@@ -38,13 +40,13 @@ describe('Embed Formatters', () => {
       const villages = [
         { villageId: 1, name: 'Village1', x: 10, y: 20, population: 100, playerName: 'Player1', allianceTag: 'ALL', distance: 15.5 },
       ];
-      const embed = createVillageWithDistanceEmbed('Near', villages, 1, false);
+      const embed = createVillageWithDistanceEmbed(LANG, 'Near', villages, 1, false);
       const data = embed.toJSON();
       expect(data.fields?.[0].name).toContain('15.5 fields');
     });
 
     it('should show empty message when no villages', () => {
-      const embed = createVillageWithDistanceEmbed('Empty', [], 0, false);
+      const embed = createVillageWithDistanceEmbed(LANG, 'Empty', [], 0, false);
       const data = embed.toJSON();
       expect(data.description).toContain('No villages found');
     });
@@ -59,14 +61,14 @@ describe('Embed Formatters', () => {
           explanation: { score: 80, isCandidate: true, reasons: ['No change in population'] },
         },
       ];
-      const embed = createInactiveReportEmbed('Inactive', candidates, 1, false);
+      const embed = createInactiveReportEmbed(LANG, 'Inactive', candidates, 1, false);
       const data = embed.toJSON();
       expect(data.fields?.[0].name).toContain('Score: 80');
       expect(data.fields?.[0].value).toContain('No change in population');
     });
 
     it('should show empty message when no candidates', () => {
-      const embed = createInactiveReportEmbed('Inactive', [], 0, false);
+      const embed = createInactiveReportEmbed(LANG, 'Inactive', [], 0, false);
       const data = embed.toJSON();
       expect(data.description).toBe('No inactive candidates found.');
     });
@@ -78,7 +80,7 @@ describe('Embed Formatters', () => {
         { allianceTag: 'ENEMY', status: 'enemy' },
         { allianceTag: 'FRIEND', status: 'ally' },
       ];
-      const embed = createDiplomacyListEmbed('Diplomacy', statuses);
+      const embed = createDiplomacyListEmbed(LANG, 'Diplomacy', statuses);
       const data = embed.toJSON();
       expect(data.fields).toHaveLength(2);
       expect(data.fields?.[0].name).toBe('ENEMY');
@@ -86,7 +88,7 @@ describe('Embed Formatters', () => {
     });
 
     it('should show empty message when no statuses', () => {
-      const embed = createDiplomacyListEmbed('Diplomacy', []);
+      const embed = createDiplomacyListEmbed(LANG, 'Diplomacy', []);
       const data = embed.toJSON();
       expect(data.description).toBe('No diplomacy settings configured.');
     });
@@ -99,7 +101,7 @@ describe('Embed Formatters', () => {
         'Latest Snapshot': '2026-04-20T00:00:00.000Z',
         'Total Villages': '1000',
       };
-      const embed = createServerInfoEmbed('Server Info', info);
+      const embed = createServerInfoEmbed(LANG, 'Server Info', info);
       const data = embed.toJSON();
       expect(data.fields).toHaveLength(3);
       expect(data.fields?.[0].name).toBe('Server ID');
