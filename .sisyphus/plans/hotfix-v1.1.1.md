@@ -19,7 +19,7 @@ Naprawić dwa krytyczne błędy wprowadzone w v1.1.0, które powodują awarię d
 
 ## TODOs
 
-- [ ] 1. Zainstalować `express-ejs-layouts` i skonfigurować w `src/admin/server.ts`
+- [x] 1. Zainstalować `express-ejs-layouts` i skonfigurować w `src/admin/server.ts`
 
   **What to do**:
   - `npm install express-ejs-layouts`
@@ -49,7 +49,7 @@ Naprawić dwa krytyczne błędy wprowadzone w v1.1.0, które powodują awarię d
     Evidence: .sisyphus/evidence/task-1-dashboard-ok.html
   ```
 
-- [ ] 2. Przestawić kolejność opcji w `inactiveSearch.ts`
+- [x] 2. Przestawić kolejność opcji w `inactiveSearch.ts`
 
   **What to do**:
   - W `src/discord/commands/definitions/inactiveSearch.ts`:
@@ -85,10 +85,10 @@ Naprawić dwa krytyczne błędy wprowadzone w v1.1.0, które powodują awarię d
 
 ## Final Verification Wave
 
-- [ ] F1. **Build check** — `npm run build` PASS
-- [ ] F2. **Type check** — `npm run typecheck` PASS
-- [ ] F3. **Tests** — `npm run test -- tests/discord/` PASS
-- [ ] F4. **Manual QA** — curl localhost:3001 zwraca 200
+- [x] F1. **Build check** — `npm run build` PASS
+- [x] F2. **Type check** — `npm run typecheck` PASS
+- [x] F3. **Tests** — `npm run test -- tests/discord/` PASS
+- [x] F4. **Manual QA** — curl localhost:3001 zwraca 200
 
 ## Commit Strategy
 

@@ -12,10 +12,10 @@ export const tribeSearchCommand = new SlashCommandBuilder()
       )
   )
   .addIntegerOption(opt =>
-    opt.setName('x').setDescription('X coordinate (optional)').setRequired(false).setMinValue(-200).setMaxValue(200)
+    opt.setName('x').setDescription('X coordinate').setRequired(true).setMinValue(-200).setMaxValue(200)
   )
   .addIntegerOption(opt =>
-    opt.setName('y').setDescription('Y coordinate (optional)').setRequired(false).setMinValue(-200).setMaxValue(200)
+    opt.setName('y').setDescription('Y coordinate').setRequired(true).setMinValue(-200).setMaxValue(200)
   )
   .addIntegerOption(opt =>
     opt.setName('radius').setDescription('Search radius in fields').setRequired(false).setMinValue(1).setMaxValue(200)

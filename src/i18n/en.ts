@@ -28,7 +28,6 @@ const en = {
   'alliance_villages.title': 'Alliance {tag} Villages',
   'player_villages.title': 'Player {name} Villages',
   'tribe_search.title': '{tribe} villages near {x}|{y} (radius: {radius})',
-  'tribe_search.title_all': '{tribe} villages',
   'tribe_search.unknown': 'Unknown tribe selected.',
   'inactive_search.title': 'Inactive Candidates',
   'inactive_search.title_near': 'Inactive Candidates near {x}|{y} (radius: {radius})',

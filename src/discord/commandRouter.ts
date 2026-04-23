@@ -426,23 +426,17 @@ async function handleTribeSearch(
     return;
   }
 
-  const x = interaction.options.getInteger('x');
-  const y = interaction.options.getInteger('y');
-  const radius = interaction.options.getInteger('radius') ?? undefined;
+  const x = interaction.options.getInteger('x', true);
+  const y = interaction.options.getInteger('y', true);
+  const radius = interaction.options.getInteger('radius') ?? 50;
   const limit = interaction.options.getInteger('limit') ?? 10;
 
-  const options: Parameters<typeof findVillagesByTribe>[3] = { limit };
-  if (x !== null && y !== null) {
-    options.center = { x, y };
-    options.radius = radius ?? 50;
-  }
+  const options: Parameters<typeof findVillagesByTribe>[3] = { limit, center: { x, y }, radius };
 
   const result = await findVillagesByTribe(prisma, config.SERVER_ID, parseInt(tribeId), options);
 
   const tribeName = TRIBE_DISPLAY_NAMES[tribeKey] ?? tribeKey;
-  const title = x !== null && y !== null
-    ? translate(lang, 'tribe_search.title', { tribe: tribeName, x, y, radius: options.radius })
-    : translate(lang, 'tribe_search.title_all', { tribe: tribeName });
+  const title = translate(lang, 'tribe_search.title', { tribe: tribeName, x, y, radius });
 
   const embed = createVillageWithDistanceEmbed(lang, title, result.villages, result.totalMatched, result.hasMore);
 

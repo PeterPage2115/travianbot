@@ -28,7 +28,6 @@ const pl = {
   'alliance_villages.title': 'Wioski sojuszu {tag}',
   'player_villages.title': 'Wioski gracza {name}',
   'tribe_search.title': 'Wioski {tribe} w pobliżu {x}|{y} (promień: {radius})',
-  'tribe_search.title_all': 'Wioski {tribe}',
   'tribe_search.unknown': 'Wybrano nieznane plemię.',
   'inactive_search.title': 'Kandydaci na nieaktywnych',
   'inactive_search.title_near': 'Nieaktywni w pobliżu {x}|{y} (promień: {radius})',
