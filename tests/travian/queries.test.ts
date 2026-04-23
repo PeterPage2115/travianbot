@@ -897,7 +897,10 @@ describe('Travian Queries - Integration', () => {
           ]
         });
 
-        const result = await findInactiveCandidates(prisma, inactiveServer.id, { limit: 10 });
+        const result = await findInactiveCandidates(prisma, inactiveServer.id, {
+          limit: 10,
+          heuristics: { minHistorySnapshots: 3 }
+        });
 
         expect(result.villages.map(v => v.name)).toEqual(['Flat Farm', 'Slow Farm']);
         expect(result.villages[0]).toMatchObject({
