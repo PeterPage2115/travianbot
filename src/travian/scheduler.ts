@@ -6,6 +6,8 @@ import { logger } from '../logger.js';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5 * 60 * 1000;
 
+const scheduledTasks: ReturnType<typeof cron.schedule>[] = [];
+
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -81,5 +83,27 @@ export function startImportScheduler(
     }
   });
 
+  scheduledTasks.push(task);
+
   return task;
 }
+
+export function stopAllSchedulers(): void {
+  logger.info({ count: scheduledTasks.length }, 'Stopping all scheduled tasks');
+  for (const task of scheduledTasks) {
+    task.stop();
+  }
+  scheduledTasks.length = 0;
+}
+
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, stopping schedulers gracefully');
+  stopAllSchedulers();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, stopping schedulers gracefully');
+  stopAllSchedulers();
+  process.exit(0);
+});

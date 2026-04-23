@@ -18,6 +18,33 @@
       "agent": "Sisyphus-Junior",
       "category": "quick",
       "updated_at": "2026-04-23T20:43:37.462Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Fix: Case-insensitive wyszukiwanie alliance/player",
+      "session_id": "ses_243e3b0f1ffe1tE1gIXJGkyIz9",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-23T20:52:53.601Z"
+    },
+    "todo:10": {
+      "task_key": "todo:10",
+      "task_label": "10",
+      "task_title": "Fix: Usunąć/użyć `handleCommandError`",
+      "session_id": "ses_243dfa6caffeXkYGaSoOAMQIaD",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-23T20:59:52.779Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Build check** — `npm run build` PASS",
+      "session_id": "ses_243d2dda9ffeGIW0khREC52hs7",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-23T21:14:34.567Z"
     }
   }
 }

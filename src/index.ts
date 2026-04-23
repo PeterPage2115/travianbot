@@ -1,16 +1,17 @@
 import { loadEnv, sanitizeDatabaseUrl } from './config/env.js';
 import { getPrismaClient, disconnectPrisma } from './db/prisma.js';
 import { createDiscordClient, setupGracefulShutdown } from './discord/client.js';
-import { handleInteraction } from './discord/commandRouter.js';
+import { handleInteraction, getLang } from './discord/commandRouter.js';
 import { registerSlashCommands } from './discord/commands/register.js';
 import { startImportScheduler } from './travian/scheduler.js';
 import { createAdminServer } from './admin/server.js';
 import { logCommand, logError } from './admin/metrics.js';
 import { logger } from './logger.js';
 import { translate } from './i18n/index.js';
-import { resolveStoredLanguagePreference } from './settings/languagePreferences.js';
+
 import './discord/commands/definitions/allianceNear.js';
 import './discord/commands/definitions/enemyNear.js';
+import './discord/commands/definitions/nearestEnemy.js';
 import './discord/commands/definitions/inactiveSearch.js';
 import './discord/commands/definitions/allianceVillages.js';
 import './discord/commands/definitions/playerVillages.js';
@@ -93,9 +94,7 @@ async function main() {
       });
 
       try {
-        const guildId = interaction.guildId ?? '';
-        const userId = interaction.user.id;
-        const lang = await resolveStoredLanguagePreference(prisma, guildId, userId);
+        const lang = await getLang(interaction, prisma);
         const userErrorMessage = translate(lang, 'common.error', { message: errorMessage });
         if (interaction.deferred) {
           await interaction.editReply({ content: userErrorMessage });

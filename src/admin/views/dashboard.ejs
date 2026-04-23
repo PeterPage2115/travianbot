@@ -121,7 +121,7 @@
 <% } %>
 
 <script>
-  const chartData = <%- JSON.stringify(chartData) %>;
+  const chartData = <%- JSON.stringify(chartData).replace(/</g, '\\u003c') %>;
   const ctx = document.getElementById('commandsChart').getContext('2d');
   new Chart(ctx, {
     type: 'bar',

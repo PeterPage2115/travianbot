@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserSetting } from '@prisma/client';
 import { SupportedLanguage, normalizeLanguage } from '../i18n/index.js';
 
 export interface UserSettingRecord {
@@ -16,23 +16,16 @@ export async function setUserLanguageOverride(
   const normalizedUserId = normalizeIdentifier(userId, 'userId');
   const normalizedLanguage = requireSupportedLanguage(language, 'language');
 
-  await ensureUserSettingsTable(prisma);
+  const result = await prisma.userSetting.upsert({
+    where: { userId: normalizedUserId },
+    update: { languageOverride: normalizedLanguage },
+    create: {
+      userId: normalizedUserId,
+      languageOverride: normalizedLanguage,
+    },
+  });
 
-  const rows = await prisma.$queryRawUnsafe<UserSettingRow[]>(
-    `
-      INSERT INTO user_settings (user_id, language_override, created_at, updated_at)
-      VALUES ($1, $2, NOW(), NOW())
-      ON CONFLICT (user_id)
-      DO UPDATE SET
-        language_override = EXCLUDED.language_override,
-        updated_at = NOW()
-      RETURNING user_id, language_override, created_at, updated_at
-    `,
-    normalizedUserId,
-    normalizedLanguage
-  );
-
-  return mapUserSettingRow(rows[0]);
+  return mapUserSettingRecord(result);
 }
 
 export async function getUserLanguageOverride(
@@ -41,42 +34,24 @@ export async function getUserLanguageOverride(
 ): Promise<SupportedLanguage | null> {
   const normalizedUserId = normalizeIdentifier(userId, 'userId');
 
-  await ensureUserSettingsTable(prisma);
+  const result = await prisma.userSetting.findUnique({
+    where: { userId: normalizedUserId },
+    select: { languageOverride: true },
+  });
 
-  const rows = await prisma.$queryRawUnsafe<Array<Pick<UserSettingRow, 'language_override'>>>(
-    `
-      SELECT language_override
-      FROM user_settings
-      WHERE user_id = $1
-      LIMIT 1
-    `,
-    normalizedUserId
-  );
-
-  return normalizeLanguage(rows[0]?.language_override) ?? null;
+  return normalizeLanguage(result?.languageOverride) ?? null;
 }
 
-async function ensureUserSettingsTable(prisma: PrismaClient): Promise<void> {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS user_settings (
-      user_id TEXT PRIMARY KEY,
-      language_override TEXT NOT NULL CHECK (language_override IN ('en', 'pl')),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-}
-
-function mapUserSettingRow(row: UserSettingRow | undefined): UserSettingRecord {
-  if (!row) {
+function mapUserSettingRecord(setting: UserSetting | null): UserSettingRecord {
+  if (!setting) {
     throw new Error('Failed to persist user settings');
   }
 
   return {
-    userId: row.user_id,
-    languageOverride: requireSupportedLanguage(row.language_override, 'languageOverride'),
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at)
+    userId: setting.userId,
+    languageOverride: requireSupportedLanguage(setting.languageOverride, 'languageOverride'),
+    createdAt: setting.createdAt,
+    updatedAt: setting.updatedAt,
   };
 }
 
@@ -96,11 +71,4 @@ function requireSupportedLanguage(value: string, fieldName: string): SupportedLa
   }
 
   return normalized;
-}
-
-interface UserSettingRow {
-  user_id: string;
-  language_override: string;
-  created_at: string | Date;
-  updated_at: string | Date;
 }

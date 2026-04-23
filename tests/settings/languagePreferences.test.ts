@@ -24,12 +24,12 @@ describe('Language preferences', () => {
   const userWithoutOverrideId = `language-pref-user-no-override-${testRunId}`;
 
   afterAll(async () => {
-    try {
-      await prisma.$executeRawUnsafe('DELETE FROM user_settings WHERE user_id IN ($1, $2)', userId, userWithoutOverrideId);
-      await prisma.$executeRawUnsafe('DELETE FROM guild_settings WHERE guild_id = $1', guildId);
-    } catch {
-      // Ignore cleanup errors when persistence tables were not created due to an earlier test failure.
-    }
+    await prisma.userSetting.deleteMany({
+      where: { userId: { in: [userId, userWithoutOverrideId] } }
+    });
+    await prisma.guildSetting.deleteMany({
+      where: { guildId }
+    });
 
     await prisma.$disconnect();
     await pool.end();
@@ -57,20 +57,6 @@ describe('Language preferences', () => {
     await setUserLanguageOverride(prisma, userId, 'en');
 
     expect(await resolveStoredLanguagePreference(prisma, guildId, userId)).toBe('en');
-  });
-
-  it('recreates settings tables after they are dropped in the same process', async () => {
-    await setGuildDefaultLanguage(prisma, guildId, 'pl');
-    await setUserLanguageOverride(prisma, userId, 'en');
-
-    await prisma.$executeRawUnsafe('DROP TABLE IF EXISTS user_settings');
-    await prisma.$executeRawUnsafe('DROP TABLE IF EXISTS guild_settings');
-
-    await setGuildDefaultLanguage(prisma, guildId, 'en');
-    await setUserLanguageOverride(prisma, userId, 'pl');
-
-    expect(await resolveStoredLanguagePreference(prisma, guildId, userId)).toBe('pl');
-    expect(await resolveStoredLanguagePreference(prisma, guildId, userWithoutOverrideId)).toBe('en');
   });
 
   it('returns translated command text and status labels for supported languages', () => {

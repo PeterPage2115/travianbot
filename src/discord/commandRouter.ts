@@ -4,9 +4,11 @@ import { EnvConfig } from '../config/env.js';
 import { logger } from '../logger.js';
 import { requireAdmin } from './commands/handler.js';
 import { resolveStoredLanguagePreference } from '../settings/languagePreferences.js';
+import { getUserLanguageOverride } from '../settings/userSettingsRepository.js';
 import { translate, SupportedLanguage } from '../i18n/index.js';
 import { findAllianceVillagesNear } from '../travian/queries/findAllianceVillagesNear.js';
 import { findEnemyVillagesNearForGuild } from '../travian/diplomacy/enemyQueries.js';
+import { findNearestEnemies } from '../travian/queries/findNearestEnemies.js';
 import { findInactiveCandidates } from '../travian/queries/findInactiveCandidates.js';
 import { listAllianceVillages } from '../travian/queries/listAllianceVillages.js';
 import { listPlayerVillages } from '../travian/queries/listPlayerVillages.js';
@@ -38,11 +40,16 @@ import {
   createWotwInfoEmbed,
 } from './embeds/formatters.js';
 
-async function getLang(interaction: Interaction, prisma: PrismaClient): Promise<SupportedLanguage> {
-  if (!interaction.guildId || !interaction.isChatInputCommand()) {
+export async function getLang(interaction: Interaction, prisma: PrismaClient): Promise<SupportedLanguage> {
+  if (!interaction.isChatInputCommand()) {
     return 'en';
   }
-  return resolveStoredLanguagePreference(prisma, interaction.guildId, interaction.user.id);
+
+  if (interaction.guildId) {
+    return resolveStoredLanguagePreference(prisma, interaction.guildId, interaction.user.id);
+  }
+
+  return (await getUserLanguageOverride(prisma, interaction.user.id)) ?? 'en';
 }
 
 export async function handleInteraction(
@@ -61,6 +68,9 @@ export async function handleInteraction(
         break;
       case 'enemy-near':
         await handleEnemyNear(interaction, prisma, config, lang);
+        break;
+      case 'nearest-enemy':
+        await handleNearestEnemy(interaction, prisma, config, lang);
         break;
       case 'inactive-search':
         await handleInactiveSearch(interaction, prisma, config, lang);
@@ -141,6 +151,11 @@ async function handleEnemyNear(
   config: EnvConfig,
   lang: SupportedLanguage
 ): Promise<void> {
+  if (!interaction.guildId) {
+    await interaction.reply({ content: translate(lang, 'common.guild_only'), ephemeral: true });
+    return;
+  }
+
   await interaction.deferReply();
 
   const x = interaction.options.getInteger('x', true);
@@ -148,14 +163,34 @@ async function handleEnemyNear(
   const radius = interaction.options.getInteger('radius') ?? 50;
   const limit = interaction.options.getInteger('limit') ?? 10;
 
-  if (!interaction.guildId) {
-    await interaction.editReply({ content: translate(lang, 'common.guild_only') });
-    return;
-  }
-
   const result = await findEnemyVillagesNearForGuild(prisma, interaction.guildId, config.SERVER_ID, { x, y }, radius, { limit });
 
   const title = translate(lang, 'enemy_near.title', { x, y, radius });
+  const embed = createVillageWithDistanceEmbed(lang, title, result.villages, result.totalMatched, result.hasMore, 0xe74c3c);
+
+  await interaction.editReply({ embeds: [embed] });
+}
+
+async function handleNearestEnemy(
+  interaction: ChatInputCommandInteraction,
+  prisma: PrismaClient,
+  config: EnvConfig,
+  lang: SupportedLanguage
+): Promise<void> {
+  if (!interaction.guildId) {
+    await interaction.reply({ content: translate(lang, 'common.guild_only'), ephemeral: true });
+    return;
+  }
+
+  await interaction.deferReply();
+
+  const x = interaction.options.getInteger('x', true);
+  const y = interaction.options.getInteger('y', true);
+  const limit = interaction.options.getInteger('limit') ?? 10;
+
+  const result = await findNearestEnemies(prisma, interaction.guildId, config.SERVER_ID, { x, y }, { limit });
+
+  const title = translate(lang, 'nearest_enemy.title', { x, y });
   const embed = createVillageWithDistanceEmbed(lang, title, result.villages, result.totalMatched, result.hasMore, 0xe74c3c);
 
   await interaction.editReply({ embeds: [embed] });
@@ -240,7 +275,7 @@ async function handleDiplomacySet(
     return;
   }
 
-  if (!await requireAdmin(config, interaction)) return;
+  if (!await requireAdmin(config, interaction, lang)) return;
 
   await interaction.deferReply();
 
@@ -258,12 +293,12 @@ async function handleDiplomacyList(
   config: EnvConfig,
   lang: SupportedLanguage
 ): Promise<void> {
-  await interaction.deferReply();
-
   if (!interaction.guildId) {
-    await interaction.editReply({ content: translate(lang, 'common.guild_only') });
+    await interaction.reply({ content: translate(lang, 'common.guild_only'), ephemeral: true });
     return;
   }
+
+  await interaction.deferReply();
 
   const states = await listDiplomacyStates(prisma, interaction.guildId);
 
@@ -287,7 +322,7 @@ async function handleDiplomacyRemove(
     return;
   }
 
-  if (!await requireAdmin(config, interaction)) return;
+  if (!await requireAdmin(config, interaction, lang)) return;
 
   await interaction.deferReply();
 
@@ -316,7 +351,7 @@ async function handleSettingsLanguage(
   const scope = interaction.options.getString('scope') ?? 'user';
 
   if (scope === 'server') {
-    if (!await requireAdmin(config, interaction)) return;
+    if (!await requireAdmin(config, interaction, lang)) return;
     await interaction.deferReply();
     await setGuildDefaultLanguage(prisma, interaction.guildId, language);
     await interaction.editReply({ content: translate(lang, 'settings.language.updated_server', { language }) });
@@ -333,7 +368,12 @@ async function handleMapRefresh(
   config: EnvConfig,
   lang: SupportedLanguage
 ): Promise<void> {
-  if (!await requireAdmin(config, interaction)) return;
+  if (!interaction.guildId) {
+    await interaction.reply({ content: translate(lang, 'common.guild_only'), ephemeral: true });
+    return;
+  }
+
+  if (!await requireAdmin(config, interaction, lang)) return;
 
   await interaction.deferReply();
 
@@ -390,6 +430,7 @@ async function handleHelp(
   const commands = [
     { name: 'alliance-near', description: translate(lang, 'help.alliance-near') },
     { name: 'enemy-near', description: translate(lang, 'help.enemy-near') },
+    { name: 'nearest-enemy', description: translate(lang, 'help.nearest-enemy') },
     { name: 'inactive-search', description: translate(lang, 'help.inactive-search') },
     { name: 'alliance-villages', description: translate(lang, 'help.alliance-villages') },
     { name: 'player-villages', description: translate(lang, 'help.player-villages') },
@@ -496,7 +537,7 @@ async function handleDistance(
       const aTime = parseFloat(a.time.split('h ')[0]) * 60 + parseFloat(a.time.split('h ')[1]);
       const bTime = parseFloat(b.time.split('h ')[0]) * 60 + parseFloat(b.time.split('h ')[1]);
       return aTime < bTime ? a : b;
-    });
+    }, unitResults[0]);
 
     tribeResults.push({
       tribeName: TRIBE_DISPLAY_NAMES[tribeKey] ?? tribeKey,

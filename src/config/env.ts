@@ -18,6 +18,7 @@ const envSchema = z.object({
   INACTIVITY_SMALL_GROWTH_THRESHOLD: z.coerce.number().int().nonnegative().default(50),
   INACTIVITY_SMALL_GROWTH_SCORE: z.coerce.number().int().nonnegative().default(3),
   ADMIN_PORT: z.coerce.number().int().positive().default(3001),
+  ADMIN_PASSWORD: z.string().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

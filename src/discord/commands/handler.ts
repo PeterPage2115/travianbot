@@ -1,7 +1,6 @@
 import { Interaction, ChatInputCommandInteraction } from 'discord.js';
 import { EnvConfig } from '../../config/env.js';
-import { logger } from '../../logger.js';
-import { translate } from '../../i18n/index.js';
+import { translate, SupportedLanguage } from '../../i18n/index.js';
 
 export function isAdmin(config: EnvConfig, interaction: Interaction): boolean {
   if (!config.ADMIN_ROLE_ID) {
@@ -22,10 +21,11 @@ export function isAdmin(config: EnvConfig, interaction: Interaction): boolean {
 
 export async function requireAdmin(
   config: EnvConfig,
-  interaction: ChatInputCommandInteraction
+  interaction: ChatInputCommandInteraction,
+  lang: SupportedLanguage
 ): Promise<boolean> {
   if (!isAdmin(config, interaction)) {
-    await interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+    await interaction.reply({ content: translate(lang, 'common.no_permission'), ephemeral: true });
     return false;
   }
   return true;
@@ -38,14 +38,3 @@ export function getGuildLanguage(interaction: Interaction): string | null {
   return null;
 }
 
-export async function handleCommandError(interaction: ChatInputCommandInteraction, error: unknown): Promise<void> {
-  logger.error({ error, command: interaction.commandName }, 'Command execution failed');
-
-  const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
-
-  if (interaction.replied || interaction.deferred) {
-    await interaction.followUp({ content: `Error: ${message}`, ephemeral: true });
-  } else {
-    await interaction.reply({ content: `Error: ${message}`, ephemeral: true });
-  }
-}

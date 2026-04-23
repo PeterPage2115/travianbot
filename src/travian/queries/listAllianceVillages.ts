@@ -46,7 +46,7 @@ export async function listAllianceVillages(
   const alliance = await prisma.alliance.findFirst({
     where: {
       serverId,
-      tag: allianceTag
+      tag: { equals: allianceTag, mode: 'insensitive' }
     }
   });
 

@@ -26,7 +26,7 @@ export async function listPlayerVillages(
   const player = await prisma.player.findFirst({
     where: {
       serverId,
-      name: playerName
+      name: { equals: playerName, mode: 'insensitive' }
     }
   });
 

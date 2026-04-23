@@ -3,9 +3,33 @@ import ejsLayouts from 'express-ejs-layouts';
 import { getDashboardStats, getCommandLogs, getErrorLogs, getCommandStatsByDay } from './metrics.js';
 import { logger } from '../logger.js';
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
 function renderWithLayout(res: express.Response, view: string, locals: Record<string, unknown>): void {
   const path = view === 'dashboard' ? '/' : `/${view}`;
   res.render(view, { ...locals, path });
+}
+
+function checkAuth(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  if (!ADMIN_PASSWORD) {
+    return next();
+  }
+
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic');
+    res.status(401).send('Authentication required');
+    return;
+  }
+
+  const credentials = Buffer.from(auth.slice(6), 'base64').toString('utf8');
+  const [, password] = credentials.split(':');
+  if (password !== ADMIN_PASSWORD) {
+    res.status(401).send('Invalid credentials');
+    return;
+  }
+
+  next();
 }
 
 export function createAdminServer(port: number): express.Application {
@@ -16,6 +40,7 @@ export function createAdminServer(port: number): express.Application {
   app.use(ejsLayouts);
 
   app.use(express.static('src/admin/public'));
+  app.use(checkAuth);
 
   app.get('/', (_req, res) => {
     const stats = getDashboardStats();
