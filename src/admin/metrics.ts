@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { resolve } from 'path';
 import fs from 'fs';
+import { logger } from '../logger';
 
 export interface CommandLogEntry {
   id: number;
@@ -89,37 +90,45 @@ function initSchema(database: Database.Database): void {
 }
 
 export function logCommand(entry: Omit<CommandLogEntry, 'id' | 'timestamp'>): void {
-  const database = getMetricsDb();
-  const stmt = database.prepare(`
-    INSERT INTO command_logs (user_id, user_name, guild_id, guild_name, command_name, success, duration_ms, error_message)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  stmt.run(
-    entry.userId,
-    entry.userName,
-    entry.guildId,
-    entry.guildName,
-    entry.commandName,
-    entry.success ? 1 : 0,
-    entry.durationMs,
-    entry.errorMessage
-  );
+  try {
+    const database = getMetricsDb();
+    const stmt = database.prepare(`
+      INSERT INTO command_logs (user_id, user_name, guild_id, guild_name, command_name, success, duration_ms, error_message)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      entry.userId,
+      entry.userName,
+      entry.guildId,
+      entry.guildName,
+      entry.commandName,
+      entry.success ? 1 : 0,
+      entry.durationMs,
+      entry.errorMessage
+    );
+  } catch (error) {
+    logger.error({ error, entry }, 'Failed to log command to metrics DB');
+  }
 }
 
 export function logError(entry: Omit<ErrorLogEntry, 'id' | 'timestamp'>): void {
-  const database = getMetricsDb();
-  const stmt = database.prepare(`
-    INSERT INTO error_logs (command_name, user_id, user_name, guild_id, error_message, stack_trace)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  stmt.run(
-    entry.commandName,
-    entry.userId,
-    entry.userName,
-    entry.guildId,
-    entry.errorMessage,
-    entry.stackTrace
-  );
+  try {
+    const database = getMetricsDb();
+    const stmt = database.prepare(`
+      INSERT INTO error_logs (command_name, user_id, user_name, guild_id, error_message, stack_trace)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(
+      entry.commandName,
+      entry.userId,
+      entry.userName,
+      entry.guildId,
+      entry.errorMessage,
+      entry.stackTrace
+    );
+  } catch (error) {
+    logger.error({ error, entry }, 'Failed to log error to metrics DB');
+  }
 }
 
 export function getDashboardStats(): DashboardStats {

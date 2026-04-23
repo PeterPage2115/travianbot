@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import {
   InactiveHeuristicsConfig,
   InactiveScoreExplanation,
@@ -30,9 +30,16 @@ export interface InactiveCandidateQueryResult extends QueryResult<InactiveCandid
   };
 }
 
-function distance(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-}
+type VillageSnapshotWithRelations = Prisma.VillageSnapshotGetPayload<{
+  include: {
+    village: {
+      include: {
+        player: true;
+        alliance: true;
+      };
+    };
+  };
+}>;
 
 /**
  * Find likely inactive villages present in the latest snapshot using recent population deltas only.
@@ -57,20 +64,59 @@ export async function findInactiveCandidates(
     return emptyResult(limit, appliedConfig);
   }
 
-  const latestVillageSnapshots = await prisma.villageSnapshot.findMany({
-    where: {
-      snapshotId: latestSnapshot.id,
-      village: { serverId }
-    },
-    include: {
-      village: {
+  let latestVillageSnapshots: VillageSnapshotWithRelations[];
+
+  if (options.center && options.radius) {
+    const centerX = options.center.x;
+    const centerY = options.center.y;
+    const radiusSquared = options.radius * options.radius;
+    const take = limit * 3;
+
+    const villageIdsInRange = await prisma.$queryRaw<{ villageId: number }[]>`
+      SELECT vs.village_id as "villageId"
+      FROM village_snapshots vs
+      JOIN villages v ON vs.village_id = v.id
+      WHERE vs.snapshot_id = ${latestSnapshot.id}
+        AND v.server_id = ${serverId}
+        AND (v.x - ${centerX}) * (v.x - ${centerX}) + (v.y - ${centerY}) * (v.y - ${centerY}) <= ${radiusSquared}
+      LIMIT ${take}
+    `;
+
+    if (villageIdsInRange.length === 0) {
+      latestVillageSnapshots = [];
+    } else {
+      latestVillageSnapshots = await prisma.villageSnapshot.findMany({
+        where: {
+          snapshotId: latestSnapshot.id,
+          villageId: { in: villageIdsInRange.map(r => r.villageId) }
+        },
         include: {
-          player: true,
-          alliance: true
+          village: {
+            include: {
+              player: true,
+              alliance: true
+            }
+          }
         }
-      }
+      });
     }
-  });
+  } else {
+    latestVillageSnapshots = await prisma.villageSnapshot.findMany({
+      where: {
+        snapshotId: latestSnapshot.id,
+        village: { serverId }
+      },
+      include: {
+        village: {
+          include: {
+            player: true,
+            alliance: true
+          }
+        }
+      },
+      take: limit * 3
+    });
+  }
 
   if (latestVillageSnapshots.length === 0) {
     return {
@@ -111,13 +157,6 @@ export async function findInactiveCandidates(
   const candidates = latestVillageSnapshots
     .map(latestVillageSnapshot => {
       const village = latestVillageSnapshot.village;
-
-      if (options.center && options.radius) {
-        const dist = distance(options.center.x, options.center.y, village.x, village.y);
-        if (dist > options.radius) {
-          return null;
-        }
-      }
 
       const history = (historyByVillageId.get(latestVillageSnapshot.villageId) ?? []).map(snapshot => ({
         snapshotId: snapshot.snapshotId,

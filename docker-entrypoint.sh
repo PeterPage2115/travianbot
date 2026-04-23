@@ -8,7 +8,7 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "Running database migrations..."
-npx prisma db push --accept-data-loss --url "$DATABASE_URL"
+npx prisma migrate deploy --url "$DATABASE_URL"
 
 echo "Starting application..."
 exec node dist/index.js

@@ -1,32 +1,23 @@
 {
-  "active_plan": "/mnt/e/Projekty/TravianBot/.sisyphus/plans/fix-units-and-embeds.md",
-  "started_at": "2026-04-23T17:53:55.633Z",
+  "active_plan": "/mnt/e/Projekty/TravianBot/.sisyphus/plans/fix-v1.3.0.md",
+  "started_at": "2026-04-23T20:38:29.928Z",
   "session_ids": [
     "ses_244e6f559ffe3vX51mcKYCrikr"
   ],
   "session_origins": {
     "ses_244e6f559ffe3vX51mcKYCrikr": "direct"
   },
-  "plan_name": "fix-units-and-embeds",
+  "plan_name": "fix-v1.3.0",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Poprawić `src/travian/unitSpeeds.ts` - poprawne nazwy i prędkości",
-      "session_id": "ses_24484a397ffeuYrAioV6rjMxtP",
+      "task_title": "Fix: Odpowiedź użytkownikowi w `catch` w `src/index.ts`",
+      "session_id": "ses_243ec92a1ffege25V7h8AOSkpy",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-04-23T17:57:14.570Z"
-    },
-    "todo:3": {
-      "task_key": "todo:3",
-      "task_label": "3",
-      "task_title": "Ulepszyć embed `createDistanceEmbed`",
-      "session_id": "ses_24478c271ffeZis5p01Ra76RyZ",
-      "agent": "Sisyphus-Junior",
-      "category": "visual-engineering",
-      "updated_at": "2026-04-23T18:12:34.106Z"
+      "updated_at": "2026-04-23T20:43:37.462Z"
     }
   }
 }

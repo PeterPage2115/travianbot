@@ -52,3 +52,7 @@ Do sprawdzenia:
 2. **Kolejność**: Najpierw naprawić błędy (prędkości, nazwy, tłumaczenia), potem poprawić wygląd embedów
 3. **Tłumaczenia**: Dodać tłumaczenia nazw jednostek i plemion do pl.ts i en.ts
 4. **Embedy**: Poprawić wizualnie wszystkie embedy
+
+## Decyzja o wersji v1.3.0
+- Użytkownik chce wszystkie fixy (krytyczne + wysokie + średnie) + nowe funkcje w jednym releasie v1.3.0
+- Nowe funkcje do uzgodnienia priorytetów

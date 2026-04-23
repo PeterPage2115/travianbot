@@ -172,10 +172,10 @@ Naprawić dane jednostek w `unitSpeeds.ts`, dodać tłumaczenia, poprawić wizua
 
 ## Final Verification Wave
 
-- [ ] F1. **Build check** — `npm run build` PASS
-- [ ] F2. **Type check** — `npm run typecheck` PASS
-- [ ] F3. **Tests** — `npm run test -- tests/discord/` PASS
-- [ ] F4. **Unit speed verification** — porównanie z oficjalną tabelą Travian
+- [x] F1. **Build check** — `npm run build` PASS
+- [x] F2. **Type check** — `npm run typecheck` PASS
+- [x] F3. **Tests** — `npm run test -- tests/discord/` PASS (44/44)
+- [x] F4. **Unit speed verification** — poprawione zgodnie z oficjalną tabelą Travian Legends
 
 ## Commit Strategy
 

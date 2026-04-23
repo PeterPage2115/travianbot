@@ -7,6 +7,8 @@ import { startImportScheduler } from './travian/scheduler.js';
 import { createAdminServer } from './admin/server.js';
 import { logCommand, logError } from './admin/metrics.js';
 import { logger } from './logger.js';
+import { translate } from './i18n/index.js';
+import { resolveStoredLanguagePreference } from './settings/languagePreferences.js';
 import './discord/commands/definitions/allianceNear.js';
 import './discord/commands/definitions/enemyNear.js';
 import './discord/commands/definitions/inactiveSearch.js';
@@ -89,6 +91,22 @@ async function main() {
         errorMessage,
         stackTrace,
       });
+
+      try {
+        const guildId = interaction.guildId ?? '';
+        const userId = interaction.user.id;
+        const lang = await resolveStoredLanguagePreference(prisma, guildId, userId);
+        const userErrorMessage = translate(lang, 'common.error', { message: errorMessage });
+        if (interaction.deferred) {
+          await interaction.editReply({ content: userErrorMessage });
+        } else if (interaction.replied) {
+          await interaction.followUp({ content: userErrorMessage, ephemeral: true });
+        } else {
+          await interaction.reply({ content: userErrorMessage, ephemeral: true });
+        }
+      } catch (replyError) {
+        logger.error({ replyError }, 'Failed to send error reply to user');
+      }
     }
   });
 
