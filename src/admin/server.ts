@@ -1,4 +1,5 @@
 import express from 'express';
+import ejsLayouts from 'express-ejs-layouts';
 import { getDashboardStats, getCommandLogs, getErrorLogs, getCommandStatsByDay } from './metrics.js';
 import { logger } from '../logger.js';
 
@@ -12,6 +13,7 @@ export function createAdminServer(port: number): express.Application {
 
   app.set('view engine', 'ejs');
   app.set('views', './src/admin/views');
+  app.use(ejsLayouts);
 
   app.use(express.static('src/admin/public'));
 
