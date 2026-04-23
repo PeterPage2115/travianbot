@@ -5,6 +5,7 @@ import {
   createInactiveReportEmbed,
   createDiplomacyListEmbed,
   createServerInfoEmbed,
+  createHelpEmbed,
 } from '../../src/discord/embeds/formatters.js';
 
 const LANG = 'en' as const;
@@ -19,7 +20,7 @@ describe('Embed Formatters', () => {
       const data = embed.toJSON();
       expect(data.title).toBe('Test Title');
       expect(data.fields).toHaveLength(1);
-      expect(data.fields?.[0].name).toBe('\u200eVillage1 (10|20)');
+      expect(data.fields?.[0].name).toBe('1️⃣ \u200eVillage1 (10|20)');
     });
 
     it('should show empty message when no villages', () => {
@@ -80,7 +81,8 @@ describe('Embed Formatters', () => {
       ];
       const embed = createInactiveReportEmbed(LANG, 'Inactive', candidates, 1, false);
       const data = embed.toJSON();
-      expect(data.fields?.[0].name).toContain('Score: 80');
+      expect(data.fields?.[0].name).toContain('Village1 🔴 (10|20)');
+      expect(data.fields?.[0].value).toContain('Score: 80');
       expect(data.fields?.[0].value).toContain('unchanged snapshots');
     });
 
@@ -101,7 +103,7 @@ describe('Embed Formatters', () => {
       const data = embed.toJSON();
       expect(data.fields).toHaveLength(2);
       expect(data.fields?.[0].name).toBe('ENEMY');
-      expect(data.fields?.[0].value).toBe('Enemy');
+      expect(data.fields?.[0].value).toBe('🔴 Enemy');
     });
 
     it('should show empty message when no statuses', () => {
@@ -112,7 +114,7 @@ describe('Embed Formatters', () => {
   });
 
   describe('createServerInfoEmbed', () => {
-    it('should create embed with server info', () => {
+    it('should create embed with server info using inline fields and emojis', () => {
       const info = {
         'Server ID': '1',
         'Latest Snapshot': '2026-04-20T00:00:00.000Z',
@@ -120,9 +122,37 @@ describe('Embed Formatters', () => {
       };
       const embed = createServerInfoEmbed(LANG, 'Server Info', info);
       const data = embed.toJSON();
-      expect(data.fields).toHaveLength(3);
-      expect(data.fields?.[0].name).toBe('Server ID');
+      expect(data.fields).toHaveLength(5);
+      expect(data.fields?.[0].name).toBe('🆔 Server ID');
       expect(data.fields?.[0].value).toBe('1');
+      expect(data.fields?.[0].inline).toBe(true);
+      expect(data.fields?.[1].name).toBe('📅 Latest Snapshot');
+      expect(data.fields?.[2].name).toBe('\u200B');
+      expect(data.fields?.[3].name).toBe('🏘️ Total Villages');
+      expect(data.fields?.[4].name).toBe('\u200B');
+    });
+  });
+
+  describe('createHelpEmbed', () => {
+    it('should create embed with categorized commands', () => {
+      const commands = [
+        { name: 'alliance-near', description: 'Find nearby alliance villages' },
+        { name: 'player-info', description: 'Show player info' },
+        { name: 'diplomacy-set', description: 'Set diplomacy' },
+        { name: 'server-info', description: 'Show server info' },
+        { name: 'map-refresh', description: 'Refresh map' },
+        { name: 'unknown-cmd', description: 'Unknown command' },
+      ];
+      const embed = createHelpEmbed(LANG, 'Help', commands);
+      const data = embed.toJSON();
+      expect(data.fields).toBeDefined();
+      expect(data.fields!.length).toBeGreaterThan(0);
+      expect(data.fields!.some(f => f.name === '🔍 Search')).toBe(true);
+      expect(data.fields!.some(f => f.name === '📋 Lists')).toBe(true);
+      expect(data.fields!.some(f => f.name === '⚔️ Diplomacy')).toBe(true);
+      expect(data.fields!.some(f => f.name === '⚙️ Settings')).toBe(true);
+      expect(data.fields!.some(f => f.name === '🛠️ Admin')).toBe(true);
+      expect(data.fields!.some(f => f.name === '📦 Other')).toBe(true);
     });
   });
 });

@@ -23,6 +23,11 @@ export interface InactiveCandidate extends VillageEntry {
   populationHistory?: Array<{ snapshotAt: Date; population: number }>;
 }
 
+function getNumberPrefix(index: number): string {
+  const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+  return index < emojis.length ? emojis[index] : `${index + 1}.`;
+}
+
 export function createVillageListEmbed(
   lang: SupportedLanguage,
   title: string,
@@ -41,18 +46,15 @@ export function createVillageListEmbed(
     return embed;
   }
 
-  const tPlayer = translate(lang, 'village.player');
-  const tPop = translate(lang, 'village.pop');
-  const tAlliance = translate(lang, 'village.alliance');
-
   const ltr = '\u200E';
-  const fields: APIEmbedField[] = villages.map(v => {
+  const fields: APIEmbedField[] = villages.map((v, i) => {
+    const prefix = getNumberPrefix(i);
     const safeName = /[\u0600-\u06FF\u0750-\u077F]/.test(v.name) ? `${ltr}\`${v.name}\`` : v.name;
     const safePlayer = v.playerName && /[\u0600-\u06FF\u0750-\u077F]/.test(v.playerName) ? `${ltr}\`${v.playerName}\`` : (v.playerName ?? '—');
     const safeAlliance = v.allianceTag && /[\u0600-\u06FF\u0750-\u077F]/.test(v.allianceTag) ? `${ltr}\`${v.allianceTag}\`` : v.allianceTag;
     return {
-      name: `${ltr}${safeName} (${v.x}|${v.y})`,
-      value: `${ltr}${tPlayer}: ${safePlayer} | ${tPop}: ${v.population}${safeAlliance ? ` | ${tAlliance}: ${safeAlliance}` : ''}`,
+      name: `${prefix} ${ltr}${safeName} (${v.x}|${v.y})`,
+      value: `${ltr}👤 ${safePlayer} | 🏘️ ${v.population}${safeAlliance ? ` | 🏴 ${safeAlliance}` : ''}`,
       inline: false,
     };
   });
@@ -81,18 +83,15 @@ export function createVillageWithDistanceEmbed(
     return embed;
   }
 
-  const tPlayer = translate(lang, 'village.player');
-  const tPop = translate(lang, 'village.pop');
-  const tAlliance = translate(lang, 'village.alliance');
-
   const ltr = '\u200E';
-  const fields: APIEmbedField[] = villages.map(v => {
+  const fields: APIEmbedField[] = villages.map((v, i) => {
+    const prefix = getNumberPrefix(i);
     const safeName = /[\u0600-\u06FF\u0750-\u077F]/.test(v.name) ? `${ltr}\`${v.name}\`` : v.name;
     const safePlayer = v.playerName && /[\u0600-\u06FF\u0750-\u077F]/.test(v.playerName) ? `${ltr}\`${v.playerName}\`` : (v.playerName ?? '—');
     const safeAlliance = v.allianceTag && /[\u0600-\u06FF\u0750-\u077F]/.test(v.allianceTag) ? `${ltr}\`${v.allianceTag}\`` : v.allianceTag;
     return {
-      name: `${ltr}${safeName} (${v.x}|${v.y}) — ${v.distance.toFixed(1)} ${tFields}`,
-      value: `${ltr}${tPlayer}: ${safePlayer} | ${tPop}: ${v.population}${safeAlliance ? ` | ${tAlliance}: ${safeAlliance}` : ''}`,
+      name: `${prefix} ${ltr}${safeName} (${v.x}|${v.y}) — 📍 ${v.distance.toFixed(1)} ${tFields}`,
+      value: `${ltr}👤 ${safePlayer} | 🏘️ ${v.population}${safeAlliance ? ` | 🏴 ${safeAlliance}` : ''}`,
       inline: false,
     };
   });
@@ -127,7 +126,7 @@ export function createInactiveReportEmbed(
   const tPopTrend = translate(lang, 'inactive_search.pop_trend');
   const tNoChange = translate(lang, 'inactive_search.no_change');
 
-  const fields: APIEmbedField[] = candidates.map(c => {
+  const fields: APIEmbedField[] = candidates.map((c, index) => {
     const exp = c.explanation;
     const reasons: string[] = [];
     if (exp.unchangedSteps > 0) reasons.push(`${exp.unchangedSteps} unchanged snapshots`);
@@ -147,8 +146,10 @@ export function createInactiveReportEmbed(
       ? `${ltr}\`${c.allianceTag}\``
       : c.allianceTag;
 
-    let value = `${ltr}${tPlayer}: ${safePlayer}\n${ltr}${tPop}: ${c.population}`;
-    if (safeAlliance) value += `\n${ltr}${tAlliance}: ${safeAlliance}`;
+    const scoreEmoji = c.inactivityScore >= 80 ? '🔴' : c.inactivityScore >= 50 ? '🟡' : '🟢';
+
+    let value = `${ltr}👤 ${safePlayer}${safeAlliance ? ` (${safeAlliance})` : ''} | 🏘️ ${tPop}: ${c.population}`;
+    value += `\n${ltr}📊 Score: ${c.inactivityScore}/100`;
 
     if (c.populationHistory && c.populationHistory.length > 1) {
       const first = c.populationHistory[0];
@@ -156,13 +157,13 @@ export function createInactiveReportEmbed(
       const delta = last.population - first.population;
       const deltaStr = delta >= 0 ? `+${delta}` : `${delta}`;
       const trend = delta > 0 ? '📈' : delta < 0 ? '📉' : '➡️';
-      value += `\n${ltr}${tPopTrend}: ${trend} ${deltaStr} (${first.population} → ${last.population})`;
+      value += `\n${ltr}📈 ${tPopTrend}: ${trend} ${deltaStr} (${first.population} → ${last.population})`;
     }
 
-    value += `\n${ltr}${tReasons}: ${reasons.join(', ')}`;
+    value += `\n${ltr}🔍 ${tReasons}: ${reasons.join(', ')}`;
 
     return {
-      name: `${ltr}${safeName} (${c.x}|${c.y}) — Score: ${c.inactivityScore}`,
+      name: `${ltr}#${index + 1} ${safeName} ${scoreEmoji} (${c.x}|${c.y})`,
       value,
       inline: false,
     };
@@ -188,11 +189,21 @@ export function createDiplomacyListEmbed(
     return embed;
   }
 
-  const fields: APIEmbedField[] = statuses.map(s => ({
-    name: s.allianceTag,
-    value: `${translate(lang, `diplomacy.status.${s.status}` as TranslationKey)}`,
-    inline: true,
-  }));
+  const statusEmoji: Record<string, string> = {
+    enemy: '🔴',
+    ally: '🟢',
+    nap: '🟡',
+    neutral: '⚪',
+  };
+
+  const fields: APIEmbedField[] = statuses.map(s => {
+    const emoji = statusEmoji[s.status.toLowerCase()] || '⚪';
+    return {
+      name: s.allianceTag,
+      value: `${emoji} ${translate(lang, `diplomacy.status.${s.status}` as TranslationKey)}`,
+      inline: true,
+    };
+  });
 
   embed.addFields(fields);
 
@@ -209,14 +220,41 @@ export function createServerInfoEmbed(
     .setTitle(title)
     .setColor(color);
 
-  const fields: APIEmbedField[] = Object.entries(info).map(([key, value]) => ({
-    name: key,
-    value,
-    inline: false,
-  }));
+  const getEmoji = (key: string): string => {
+    const lower = key.toLowerCase();
+    if (lower.includes('server') && lower.includes('id')) return '🆔';
+    if (lower.includes('snapshot') || lower.includes('aktualizacja') || lower.includes('update')) return '📅';
+    if (lower.includes('village') || lower.includes('wiosek')) return '🏘️';
+    if (lower.includes('player') || lower.includes('graczy')) return '👥';
+    if (lower.includes('alliance') || lower.includes('sojuszy')) return '🤝';
+    if (lower.includes('name') || lower.includes('nazwa')) return '🏷️';
+    if (lower.includes('import') || lower.includes('next')) return '⏰';
+    return '▫️';
+  };
+
+  const entries = Object.entries(info);
+  const fields: APIEmbedField[] = [];
+
+  entries.forEach(([key, value], index) => {
+    const emoji = getEmoji(key);
+    fields.push({
+      name: `${emoji} ${key}`,
+      value,
+      inline: true,
+    });
+
+    // Add blank spacer after every 2nd field to force 2-column layout
+    if ((index + 1) % 2 === 0 && index + 1 < entries.length) {
+      fields.push({ name: '\u200B', value: '\u200B', inline: true });
+    }
+  });
+
+  // If odd number of entries, pad with a blank field
+  if (entries.length % 2 !== 0) {
+    fields.push({ name: '\u200B', value: '\u200B', inline: true });
+  }
 
   embed.addFields(fields);
-
   return embed;
 }
 
@@ -230,14 +268,46 @@ export function createHelpEmbed(
     .setTitle(title)
     .setColor(color);
 
-  const fields: APIEmbedField[] = commands.map(cmd => ({
-    name: `/${cmd.name}`,
-    value: cmd.description,
-    inline: false,
-  }));
+  const categories = [
+    { emoji: '🔍', name: 'Search', commandNames: ['alliance-near', 'enemy-near', 'inactive-search', 'tribe-search'] },
+    { emoji: '📋', name: 'Lists', commandNames: ['alliance-villages', 'player-villages', 'player-info', 'wotw-info'] },
+    { emoji: '⚔️', name: 'Diplomacy', commandNames: ['diplomacy-set', 'diplomacy-list', 'diplomacy-remove'] },
+    { emoji: '⚙️', name: 'Settings', commandNames: ['settings-language', 'server-info', 'last-update', 'distance'] },
+    { emoji: '🛠️', name: 'Admin', commandNames: ['map-refresh'] },
+  ] as const;
+
+  const commandMap = new Map(commands.map(c => [c.name, c.description]));
+  const fields: APIEmbedField[] = [];
+
+  for (const cat of categories) {
+    const lines: string[] = [];
+    for (const cmdName of cat.commandNames) {
+      const desc = commandMap.get(cmdName);
+      if (desc) {
+        lines.push(`• \`/${cmdName}\` — ${desc}`);
+      }
+    }
+
+    if (lines.length > 0) {
+      fields.push({
+        name: `${cat.emoji} ${cat.name}`,
+        value: lines.join('\n'),
+        inline: false,
+      });
+    }
+  }
+
+  const categorized = new Set<string>(categories.flatMap(c => c.commandNames));
+  const other = commands.filter(c => !categorized.has(c.name));
+  if (other.length > 0) {
+    fields.push({
+      name: '📦 Other',
+      value: other.map(c => `• \`/${c.name}\` — ${c.description}`).join('\n'),
+      inline: false,
+    });
+  }
 
   embed.addFields(fields);
-
   return embed;
 }
 
@@ -265,21 +335,25 @@ export function createPlayerInfoEmbed(
 ): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle(title)
-    .setColor(color);
+    .setColor(color)
+    .setDescription(`**${info.name}** — ${info.totalVillages} villages | ${info.totalPopulation.toLocaleString()} pop`);
 
   embed.addFields(
-    { name: translate(lang, 'player_info.tribe'), value: info.tribeName ?? translate(lang, 'player_info.unknown'), inline: true },
-    { name: translate(lang, 'player_info.alliance'), value: info.allianceTag ?? translate(lang, 'player_info.none'), inline: true },
-    { name: translate(lang, 'player_info.villages'), value: info.totalVillages.toString(), inline: true },
-    { name: translate(lang, 'player_info.total_pop'), value: info.totalPopulation.toLocaleString(), inline: true },
+    { name: '👤 Tribe', value: info.tribeName ?? translate(lang, 'player_info.unknown'), inline: true },
+    { name: '🏴 Alliance', value: info.allianceTag ?? translate(lang, 'player_info.none'), inline: true },
+    { name: '🏘️ Villages', value: info.totalVillages.toString(), inline: true },
+    { name: '👥 Total Pop', value: info.totalPopulation.toLocaleString(), inline: true },
   );
 
   if (info.villages.length > 0) {
-    const villageList = info.villages.slice(0, 10).map(v => {
+    const ltr = '\u200E';
+    const villageList = info.villages.slice(0, 10).map((v, i) => {
+      const safeName = /[\u0600-\u06FF\u0750-\u077F]/.test(v.name) ? `${ltr}\`${v.name}\`` : v.name;
       const flags = [v.isCapital ? '👑' : '', v.isCity ? '🏙️' : '', v.hasHarbor ? '⚓' : '', v.victoryPoints > 0 ? `⭐${v.victoryPoints}` : ''].filter(Boolean).join(' ');
-      return `${v.name} (${v.x}|${v.y}) — Pop: ${v.population}${flags ? ` ${flags}` : ''}`;
+      return `${i + 1}. ${ltr}${safeName} (${v.x}|${v.y}) — Pop: ${v.population}${flags ? ` ${flags}` : ''}`;
     }).join('\n');
-    embed.addFields({ name: translate(lang, 'player_info.villages'), value: villageList, inline: false });
+    const more = info.villages.length > 10 ? `\n... and ${info.villages.length - 10} more` : '';
+    embed.addFields({ name: translate(lang, 'player_info.villages'), value: `${villageList}${more}`, inline: false });
   }
 
   return embed;
@@ -296,23 +370,46 @@ export function createDistanceEmbed(
   }>,
   color: number = 0x9b59b6
 ): EmbedBuilder {
+  const ltr = '\u200E';
   const tFields = translate(lang, 'distance.fields');
   const tFastest = translate(lang, 'distance.fastest');
+
+  const tribeEmoji: Record<string, string> = {
+    romans: '🏛️',
+    teutons: '🪓',
+    gauls: '🐴',
+    egyptians: '🏺',
+    huns: '🏹',
+    spartans: '🔱',
+  };
 
   const embed = new EmbedBuilder()
     .setTitle(title)
     .setColor(color)
-    .addFields({ name: translate(lang, 'distance.label'), value: `${distance.toFixed(1)} ${tFields}`, inline: false });
+    .setDescription(`📍 ${translate(lang, 'distance.label')}: ${distance.toFixed(1)} ${tFields}`);
+
+  const fields: APIEmbedField[] = [];
 
   for (const tribe of tribeResults) {
-    const unitLines = tribe.units.map(u => `  ${u.name} (${u.speed}/h): ${u.time}`).join('\n');
-    embed.addFields({
-      name: translate(lang, 'distance.tribe_speed', { tribe: tribe.tribeName }),
-      value: `${unitLines}\n🐎 ${tFastest}: ${tribe.fastest.name} — ${tribe.fastest.time}`,
+    const tribeKey = tribe.tribeName.toLowerCase();
+    const emoji = tribeEmoji[tribeKey] || '▫️';
+    const translatedTribe = translate(lang, `tribe.${tribeKey}` as TranslationKey);
+
+    const unitLines = tribe.units.map(u => {
+      const isFastest = u.name === tribe.fastest.name;
+      return isFastest ? `⭐ ${u.name}: ${u.time}` : `${u.name}: ${u.time}`;
+    }).join('\n');
+
+    const value = `${ltr}${unitLines}\n${ltr}🏆 ${tFastest}: ${tribe.fastest.name} — ${tribe.fastest.time}`;
+
+    fields.push({
+      name: `${emoji} ${ltr}${translatedTribe}`,
+      value,
       inline: false,
     });
   }
 
+  embed.addFields(fields);
   return embed;
 }
 
@@ -339,13 +436,24 @@ export function createWotwInfoEmbed(
   const tAlliance = translate(lang, 'village.alliance');
 
   const ltr = '\u200E';
-  const fields: APIEmbedField[] = villages.map(v => {
+  const sortedByVP = [...villages].sort((a, b) => b.victoryPoints - a.victoryPoints);
+  const topVP = sortedByVP[0]?.victoryPoints ?? 0;
+  const secondVP = sortedByVP[1]?.victoryPoints ?? 0;
+  const thirdVP = sortedByVP[2]?.victoryPoints ?? 0;
+
+  const fields: APIEmbedField[] = villages.map((v, i) => {
     const safeName = /[\u0600-\u06FF\u0750-\u077F]/.test(v.name) ? `${ltr}\`${v.name}\`` : v.name;
     const safePlayer = v.playerName && /[\u0600-\u06FF\u0750-\u077F]/.test(v.playerName) ? `${ltr}\`${v.playerName}\`` : (v.playerName ?? '—');
     const safeAlliance = v.allianceTag && /[\u0600-\u06FF\u0750-\u077F]/.test(v.allianceTag) ? `${ltr}\`${v.allianceTag}\`` : v.allianceTag;
+
+    let vpEmoji = '';
+    if (v.victoryPoints === topVP && topVP > 0) vpEmoji = '🥇 ';
+    else if (v.victoryPoints === secondVP && secondVP > 0) vpEmoji = '🥈 ';
+    else if (v.victoryPoints === thirdVP && thirdVP > 0) vpEmoji = '🥉 ';
+
     return {
-      name: `${ltr}${safeName} (${v.x}|${v.y}) — ⭐${v.victoryPoints} VP`,
-      value: `${ltr}${tPlayer}: ${safePlayer} | ${tPop}: ${v.population}${safeAlliance ? ` | ${tAlliance}: ${safeAlliance}` : ''}`,
+      name: `${i + 1}. ${ltr}${safeName} (${v.x}|${v.y}) ${vpEmoji}🏆 VP: ${v.victoryPoints}`,
+      value: `${ltr}👤 ${safePlayer} | 🏘️ ${tPop}: ${v.population}${safeAlliance ? ` | 🏴 ${tAlliance}: ${safeAlliance}` : ''}`,
       inline: false,
     };
   });

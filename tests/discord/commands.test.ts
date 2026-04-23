@@ -73,7 +73,8 @@ describe('Command Router', () => {
 
       const embed = editCall.embeds![0].toJSON ? editCall.embeds![0].toJSON() : editCall.embeds![0];
       expect(embed.title).toBe('Travian Bot Commands');
-      expect(embed.fields?.length).toBeGreaterThan(10);
+      expect(embed.fields?.length).toBeGreaterThan(0);
+      expect(embed.fields?.some((f: any) => f.name.includes('Search'))).toBe(true);
     });
   });
 
