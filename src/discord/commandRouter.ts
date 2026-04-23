@@ -170,21 +170,15 @@ async function handleInactiveSearch(
   await interaction.deferReply();
 
   const limit = interaction.options.getInteger('limit') ?? 10;
-  const x = interaction.options.getInteger('x');
-  const y = interaction.options.getInteger('y');
-  const radius = interaction.options.getInteger('radius') ?? undefined;
+  const x = interaction.options.getInteger('x', true);
+  const y = interaction.options.getInteger('y', true);
+  const radius = interaction.options.getInteger('radius') ?? 50;
 
-  const options: Parameters<typeof findInactiveCandidates>[2] = { limit };
-  if (x !== null && y !== null) {
-    options.center = { x, y };
-    options.radius = radius ?? 50;
-  }
+  const options: Parameters<typeof findInactiveCandidates>[2] = { limit, center: { x, y }, radius };
 
   const result = await findInactiveCandidates(prisma, config.SERVER_ID, options);
 
-  const title = x !== null && y !== null
-    ? translate(lang, 'inactive_search.title_near', { x, y, radius: options.radius })
-    : translate(lang, 'inactive_search.title');
+  const title = translate(lang, 'inactive_search.title_near', { x, y, radius });
 
   const embed = createInactiveReportEmbed(
     lang,

@@ -19,7 +19,7 @@ describe('Embed Formatters', () => {
       const data = embed.toJSON();
       expect(data.title).toBe('Test Title');
       expect(data.fields).toHaveLength(1);
-      expect(data.fields?.[0].name).toBe('Village1 (10|20)');
+      expect(data.fields?.[0].name).toBe('\u200eVillage1 (10|20)');
     });
 
     it('should show empty message when no villages', () => {

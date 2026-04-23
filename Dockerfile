@@ -37,6 +37,10 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 ENV NODE_ENV=production
 
-EXPOSE 3000
+RUN mkdir -p /app/src/admin
+COPY --from=builder /app/src/admin/views /app/src/admin/views
+COPY --from=builder /app/src/admin/public /app/src/admin/public
+
+EXPOSE 3000 3001
 
 ENTRYPOINT ["tini", "--", "/app/docker-entrypoint.sh"]

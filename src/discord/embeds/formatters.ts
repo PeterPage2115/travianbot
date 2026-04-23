@@ -45,11 +45,17 @@ export function createVillageListEmbed(
   const tPop = translate(lang, 'village.pop');
   const tAlliance = translate(lang, 'village.alliance');
 
-  const fields: APIEmbedField[] = villages.map(v => ({
-    name: `${v.name} (${v.x}|${v.y})`,
-    value: `${tPlayer}: ${v.playerName ?? '—'} | ${tPop}: ${v.population}${v.allianceTag ? ` | ${tAlliance}: ${v.allianceTag}` : ''}`,
-    inline: false,
-  }));
+  const ltr = '\u200E';
+  const fields: APIEmbedField[] = villages.map(v => {
+    const safeName = /[\u0600-\u06FF\u0750-\u077F]/.test(v.name) ? `${ltr}\`${v.name}\`` : v.name;
+    const safePlayer = v.playerName && /[\u0600-\u06FF\u0750-\u077F]/.test(v.playerName) ? `${ltr}\`${v.playerName}\`` : (v.playerName ?? '—');
+    const safeAlliance = v.allianceTag && /[\u0600-\u06FF\u0750-\u077F]/.test(v.allianceTag) ? `${ltr}\`${v.allianceTag}\`` : v.allianceTag;
+    return {
+      name: `${ltr}${safeName} (${v.x}|${v.y})`,
+      value: `${ltr}${tPlayer}: ${safePlayer} | ${tPop}: ${v.population}${safeAlliance ? ` | ${tAlliance}: ${safeAlliance}` : ''}`,
+      inline: false,
+    };
+  });
 
   embed.addFields(fields);
 
@@ -79,11 +85,17 @@ export function createVillageWithDistanceEmbed(
   const tPop = translate(lang, 'village.pop');
   const tAlliance = translate(lang, 'village.alliance');
 
-  const fields: APIEmbedField[] = villages.map(v => ({
-    name: `${v.name} (${v.x}|${v.y}) — ${v.distance.toFixed(1)} ${tFields}`,
-    value: `${tPlayer}: ${v.playerName ?? '—'} | ${tPop}: ${v.population}${v.allianceTag ? ` | ${tAlliance}: ${v.allianceTag}` : ''}`,
-    inline: false,
-  }));
+  const ltr = '\u200E';
+  const fields: APIEmbedField[] = villages.map(v => {
+    const safeName = /[\u0600-\u06FF\u0750-\u077F]/.test(v.name) ? `${ltr}\`${v.name}\`` : v.name;
+    const safePlayer = v.playerName && /[\u0600-\u06FF\u0750-\u077F]/.test(v.playerName) ? `${ltr}\`${v.playerName}\`` : (v.playerName ?? '—');
+    const safeAlliance = v.allianceTag && /[\u0600-\u06FF\u0750-\u077F]/.test(v.allianceTag) ? `${ltr}\`${v.allianceTag}\`` : v.allianceTag;
+    return {
+      name: `${ltr}${safeName} (${v.x}|${v.y}) — ${v.distance.toFixed(1)} ${tFields}`,
+      value: `${ltr}${tPlayer}: ${safePlayer} | ${tPop}: ${v.population}${safeAlliance ? ` | ${tAlliance}: ${safeAlliance}` : ''}`,
+      inline: false,
+    };
+  });
 
   embed.addFields(fields);
 
@@ -124,8 +136,19 @@ export function createInactiveReportEmbed(
     if (exp.stableStepRatio >= 0.75) reasons.push(`Stable: ${(exp.stableStepRatio * 100).toFixed(0)}%`);
     if (reasons.length === 0) reasons.push(tNoChange);
 
-    let value = `${tPlayer}: ${c.playerName ?? '—'} | ${tPop}: ${c.population}`;
-    if (c.allianceTag) value += ` | ${tAlliance}: ${c.allianceTag}`;
+    const ltr = '\u200E';
+    const safeName = c.name.includes('\u202E') || /[\u0600-\u06FF\u0750-\u077F]/.test(c.name)
+      ? `${ltr}\`${c.name}\``
+      : c.name;
+    const safePlayer = c.playerName && (/[\u0600-\u06FF\u0750-\u077F]/.test(c.playerName) || c.playerName.includes('\u202E'))
+      ? `${ltr}\`${c.playerName}\``
+      : (c.playerName ?? '—');
+    const safeAlliance = c.allianceTag && (/[\u0600-\u06FF\u0750-\u077F]/.test(c.allianceTag) || c.allianceTag.includes('\u202E'))
+      ? `${ltr}\`${c.allianceTag}\``
+      : c.allianceTag;
+
+    let value = `${ltr}${tPlayer}: ${safePlayer}\n${ltr}${tPop}: ${c.population}`;
+    if (safeAlliance) value += `\n${ltr}${tAlliance}: ${safeAlliance}`;
 
     if (c.populationHistory && c.populationHistory.length > 1) {
       const first = c.populationHistory[0];
@@ -133,13 +156,13 @@ export function createInactiveReportEmbed(
       const delta = last.population - first.population;
       const deltaStr = delta >= 0 ? `+${delta}` : `${delta}`;
       const trend = delta > 0 ? '📈' : delta < 0 ? '📉' : '➡️';
-      value += `\n${tPopTrend}: ${trend} ${deltaStr} (${first.population} → ${last.population})`;
+      value += `\n${ltr}${tPopTrend}: ${trend} ${deltaStr} (${first.population} → ${last.population})`;
     }
 
-    value += `\n${tReasons}: ${reasons.join(', ')}`;
+    value += `\n${ltr}${tReasons}: ${reasons.join(', ')}`;
 
     return {
-      name: `${c.name} (${c.x}|${c.y}) — Score: ${c.inactivityScore}`,
+      name: `${ltr}${safeName} (${c.x}|${c.y}) — Score: ${c.inactivityScore}`,
       value,
       inline: false,
     };
@@ -315,11 +338,17 @@ export function createWotwInfoEmbed(
   const tPop = translate(lang, 'village.pop');
   const tAlliance = translate(lang, 'village.alliance');
 
-  const fields: APIEmbedField[] = villages.map(v => ({
-    name: `${v.name} (${v.x}|${v.y}) — ⭐${v.victoryPoints} VP`,
-    value: `${tPlayer}: ${v.playerName ?? '—'} | ${tPop}: ${v.population}${v.allianceTag ? ` | ${tAlliance}: ${v.allianceTag}` : ''}`,
-    inline: false,
-  }));
+  const ltr = '\u200E';
+  const fields: APIEmbedField[] = villages.map(v => {
+    const safeName = /[\u0600-\u06FF\u0750-\u077F]/.test(v.name) ? `${ltr}\`${v.name}\`` : v.name;
+    const safePlayer = v.playerName && /[\u0600-\u06FF\u0750-\u077F]/.test(v.playerName) ? `${ltr}\`${v.playerName}\`` : (v.playerName ?? '—');
+    const safeAlliance = v.allianceTag && /[\u0600-\u06FF\u0750-\u077F]/.test(v.allianceTag) ? `${ltr}\`${v.allianceTag}\`` : v.allianceTag;
+    return {
+      name: `${ltr}${safeName} (${v.x}|${v.y}) — ⭐${v.victoryPoints} VP`,
+      value: `${ltr}${tPlayer}: ${safePlayer} | ${tPop}: ${v.population}${safeAlliance ? ` | ${tAlliance}: ${safeAlliance}` : ''}`,
+      inline: false,
+    };
+  });
 
   embed.addFields(fields);
 

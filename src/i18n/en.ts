@@ -72,7 +72,7 @@ const en = {
   'help.title': 'Travian Bot Commands',
   'help.alliance-near': 'Find alliance villages near a coordinate. Options: tag, x, y, radius, limit',
   'help.enemy-near': 'Find enemy villages near a coordinate (uses diplomacy settings). Options: x, y, radius, limit',
-  'help.inactive-search': 'Find likely inactive players. Options: limit',
+  'help.inactive-search': 'Find likely inactive players. Options: x, y, radius, limit',
   'help.alliance-villages': 'List all villages of an alliance. Options: tag, limit',
   'help.player-villages': 'List all villages of a player. Options: name, limit',
   'help.tribe-search': 'Find villages by tribe. Options: tribe, x, y, radius, limit',

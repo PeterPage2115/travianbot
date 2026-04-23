@@ -32,8 +32,7 @@ async function main() {
   logger.info({ nodeEnv: config.NODE_ENV }, 'Environment loaded');
   logger.info({ database: sanitizeDatabaseUrl(config.DATABASE_URL) }, 'Database configured');
 
-  const adminPort = parseInt(process.env.ADMIN_PORT || '3001', 10);
-  createAdminServer(adminPort);
+  createAdminServer(config.ADMIN_PORT);
 
   const prisma = getPrismaClient();
   const client = createDiscordClient();

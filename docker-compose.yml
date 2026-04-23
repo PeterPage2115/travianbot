@@ -11,6 +11,8 @@ services:
       # Hardcoded database URL - always use the db service
       DATABASE_URL: postgresql://travianbot:changeme@db:5432/travianbot_prod
       NODE_ENV: production
+    ports:
+      - '3001:3001'
     depends_on:
       db:
         condition: service_healthy

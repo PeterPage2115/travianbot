@@ -72,7 +72,7 @@ const pl = {
   'help.title': 'Komendy bota Travian',
   'help.alliance-near': 'Znajdź wioski sojuszu w pobliżu współrzędnych. Opcje: tag, x, y, radius, limit',
   'help.enemy-near': 'Znajdź wrogie wioski w pobliżu współrzędnych (używa ustawień dyplomacji). Opcje: x, y, radius, limit',
-  'help.inactive-search': 'Znajdź prawdopodobnie nieaktywnych graczy. Opcje: limit',
+  'help.inactive-search': 'Znajdź prawdopodobnie nieaktywnych graczy. Opcje: x, y, radius, limit',
   'help.alliance-villages': 'Lista wszystkich wiosek sojuszu. Opcje: tag, limit',
   'help.player-villages': 'Lista wszystkich wiosek gracza. Opcje: name, limit',
   'help.tribe-search': 'Znajdź wioski według plemienia. Opcje: tribe, x, y, radius, limit',
